@@ -1,0 +1,19 @@
+extends ../layout.pug
+
+block content
+  p Bonjour #{username} 👋
+  br
+  p Félicitations !
+  p La marque #{brandName} t’a choisi pour sa campagne #{campaignName} 🎉
+  p Tu vas bientôt recevoir #{productName} pour l’essayer et partager ton expérience avec ta communauté 🎁
+  br
+  p Attention !
+  p(style="margin-bottom: 20px;") Il reste 2 étapes après la création du post pour compléter le partenariat :
+  p 1. Copier le lien du post Instagram ou de la vidéo YouTube. Voici comment faire pour Instagram:
+    img(style="max-width: 300px; display: block; margin-bottom: 20px;" src="https://res.cloudinary.com/influencerz/image/upload/v1564589072/emails/copy_link.png" alt="Copier le lien")
+  p 2. Renseigner soit le le lien du post ou de la vidéo, soit la story dans  « Collabs » sur la plateforme puis valider.
+    img(style="max-width: 300px; display: block;" src="https://res.cloudinary.com/influencerz/image/upload/v1564589091/emails/submit_reviews.png" alt="renseigner les revues")
+  br
+  a(href=collabLink) 👉 Voir les détails du partenariat 👈
+  br
+  p Merci et à très vite sur Revolt.

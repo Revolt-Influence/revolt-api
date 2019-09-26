@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "outDir": "./build/",
+        "sourceMap": true,
+        "module": "commonjs",
+        "allowJs": true,
+        "target": "es6",
+        "lib": [
+            "es2017",
+            "dom"
+        ],
+        "resolveJsonModule": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true
+    },
+    "include": [
+        "./src/**/*.ts",
+        "./src/**/*.js",
+        "./src/**/*.json"
+    ],
+    "exclude": [
+        "node_modules",
+        "build"
+    ]
+}

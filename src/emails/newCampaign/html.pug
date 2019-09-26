@@ -1,0 +1,19 @@
+extends ../layout.pug
+
+block content
+  p What's up Revolt ?
+  p Une nouvelle campagne nommée #{campaignName} a été créée par #{brandName}, ils attendent la modération.
+  p Vous pouvez trouver la campagne avec votre compte admin:
+  a(href=dashboardLink) #{dashboardLink}
+  p Vous pouvez accepter la marque dans l'onglet Réglages de la campagne
+  p Et vous pouvez joindre la marque à l'adresse #{brandEmail}
+  if isPremium
+    p L'utilisateur a un compte Premium
+  else
+    p L'utilisateur n'a pas de compte Premium
+  if ambassador
+    p L'ambassadeur de la marque est #{ambassador}
+  else
+   p La marque n'a pas d'ambassadeur.
+  br
+  p À bientôt !

@@ -1,0 +1,9 @@
+extends ../layout.pug
+
+block content
+  p Bonjour #{username} 👋
+  p Vous avez un nouveau message de #{senderUsername} sur Revolt. Le voici :
+  br
+  p(style="white-space: pre-wrap;") « #{message} »
+  br
+  a.btn.btn-primary(href=link target='_blank') Répondre à #{senderUsername}

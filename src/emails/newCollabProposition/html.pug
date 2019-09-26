@@ -1,0 +1,11 @@
+extends ../layout.pug
+
+block content
+  p Bonjour #{brandName} 👋
+  p #{username} souhaite travailler avec vous sur votre campagne "#{campaignName}". Voici son message :
+  br
+  p(style="white-space: pre-wrap;") "#{message}"
+  br
+  p
+    | Vous pouvez accepter ou refuser cette proposition depuis votre 
+    a(href=dashboardLink) dashboard de campagne.
