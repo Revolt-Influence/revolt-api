@@ -18,24 +18,12 @@ import { Creator, CreatorStatus } from '../creator/model'
 
 const router = new Router()
 
-async function allowIfLoggedIn(ctx: Context, next: () => Promise<void>): Promise<void> {
-  // Throw error if not admin
-  if (ctx.isUnauthenticated()) {
-    ctx.throw(401, errorNames.unauthorized)
-  }
-  // Continue if user is logged in
-  await next()
-}
-
 function checkIfPremium(ctx: Context) {
   // Throw an error if not premium or admin
   if (ctx.isUnauthenticated() || ctx.state.user.plan === 'free') {
     ctx.throw(401, errorNames.unauthorized)
   }
 }
-
-// Restrict all routes to logged in only
-router.use(allowIfLoggedIn)
 
 router.get('/', async ctx => {
   const page = ctx.query.page || 0
@@ -85,7 +73,7 @@ router.post('/:campaignId/toggleArchive', async ctx => {
 router.post('/:campaignId/apply', async ctx => {
   const { campaignId } = ctx.params as { campaignId: string }
   const { proposition } = ctx.request.body as { proposition: CollabProposition }
-  // Make sure it's a verified influencer
+  // Make sure it's a verified creator
   if (
     ctx.state.user.sessionType !== 'creator' ||
     (ctx.state.user as Creator).status !== CreatorStatus.verified

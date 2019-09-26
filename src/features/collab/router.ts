@@ -7,17 +7,6 @@ import { DashboardAction } from './model'
 
 const router = new Router()
 
-async function allowIfLoggedIn(ctx: Context, next: () => Promise<void>): Promise<void> {
-  // Throw error if not admin
-  if (ctx.isUnauthenticated()) {
-    ctx.throw(401, errorNames.unauthorized)
-  }
-  // Continue if user is logged in
-  await next()
-}
-
-router.use(allowIfLoggedIn)
-
 router.post('/:collabId/review', async ctx => {
   // Make sure it's a brand or an admin
   if (ctx.state.user.sessionType !== 'brand') {

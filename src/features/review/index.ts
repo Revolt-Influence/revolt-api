@@ -3,7 +3,6 @@ import { Collab, CollabModel, CollabStatus } from '../collab/model'
 import { Review, ReviewModel, ReviewFormat } from './model'
 import { getCollabById } from '../collab'
 import { CustomError, errorNames } from '../../utils/errors'
-import { getInstagramPostReview } from '../influencer/crawler'
 import { emailService } from '../../utils/emails'
 import { CreatorModel, Creator } from '../creator/model'
 import { getCampaignById } from '../campaign'
@@ -49,25 +48,10 @@ async function getReviewFromYoutubeVideoUrl(
 
 async function enrichBaseReview(baseReview: BaseReview): Promise<Review> {
   const { link, format, creatorId, instagramPostData } = baseReview
-  // TODO: fetch real data
   switch (format) {
-    case 'Instagram post':
-      const review = await getInstagramPostReview(link, creatorId, instagramPostData)
-      return review
-    case 'Youtube video':
+    case ReviewFormat.youtubeVideo:
       const video = await getReviewFromYoutubeVideoUrl(link, creatorId)
       return video
-    case 'Instagram story':
-      const now = Date.now()
-      return {
-        link,
-        format,
-        creator: creatorId,
-        lastUpdateDate: now,
-        postDate: now,
-        submitDate: now,
-        medias: [baseReview.link],
-      }
     default:
       return null
   }
@@ -93,9 +77,7 @@ async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<voi
       username: creator.name,
       brandName: (campaign.settings.brand as Brand).name,
       productName: campaign.settings.gift.name,
-      dashboardLink: `${
-        process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`]
-      }/brand/campaigns/${campaign._id}/dashboard?tab=reviews`,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=reviews`,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -154,27 +136,4 @@ async function submitCreatorReviews(
   return populatedCollab
 }
 
-async function updateInstagramReviewStats(
-  reviewId: mongoose.Types.ObjectId,
-  postData: any,
-  creatorId: mongoose.Types.ObjectId
-): Promise<DocumentType<Review>> {
-  const review = await getReviewById(reviewId)
-  const post = await getInstagramPostReview(review.link, creatorId, postData)
-  // Save updated review data
-  review.likes = post.likes
-  review.comments = post.comments
-  review.comments = post.comments
-  review.views = post.views
-  review.lastUpdateDate = Date.now()
-  await review.save()
-  return review
-}
-
-export {
-  submitCreatorReviews,
-  enrichAllReviews,
-  BaseReview,
-  getReviewById,
-  updateInstagramReviewStats,
-}
+export { submitCreatorReviews, enrichAllReviews, BaseReview, getReviewById }

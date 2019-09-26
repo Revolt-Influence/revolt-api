@@ -4,12 +4,12 @@ import * as Sentry from '@sentry/node'
 
 // Setup stuff
 dotenv.config()
-Sentry.init({ dsn: 'https://65d77b0f138e4f7086eb9451a21c1dc1@sentry.io/1370445' })
+if (process.env.NODE_ENV === 'production') {
+  Sentry.init({ dsn: process.env.SENTRY_URL })
+}
 
 const errorNames = {
   userAlreadyExists: 'User already exists',
-  influencerNotFound: 'Influencer not found',
-  influencerIsPrivate: 'Influencer is private',
   userNotFound: 'User not found',
   customerNotFound: 'Customer not found',
   listNotFound: 'List not found',
@@ -20,7 +20,6 @@ const errorNames = {
   guestPlanLimit: 'You reached the limit of the Guest plan',
   freePlanLimit: 'You reached the limit of the Free plan',
   pictureNotFound: 'Picture was not found',
-  scrapeInfluencerFail: 'Could not scrape influencer profile',
   resetPasswordEmailFail: 'Could not send reset password email',
   sendConfirmEmailLinkFail: 'Could not send confirm email link',
   invalidEmailToken: 'Invalid email token',
@@ -32,7 +31,6 @@ const errorNames = {
   // Campaign related
   campaignNotFound: 'Campaign not found',
   campaignAlreadyExists: 'Campaign already exists',
-  influencerAlreadyAdded: 'Influencer already added',
   default: 'Something went wrong',
   // Collab related
   collabNotFound: 'Collab not found',

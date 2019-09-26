@@ -14,9 +14,7 @@ import campaignRouter from './features/campaign/router'
 import userRouter from './features/user/router'
 import creatorRouter from './features/creator/router'
 import collabRouter from './features/collab/router'
-import adminRouter from './features/admin/router'
 import youtubeRouter from './features/youtuber/router'
-import reviewRouter from './features/review/router'
 import conversationRouter from './features/conversation/router'
 import { passport } from './features/session'
 import { handleGlobalErrors } from './utils/errors'
@@ -29,12 +27,11 @@ const io = socketIo(server)
 app.context.io = io // Attach socket.io to context for easy access
 const router = new Router()
 dotenv.config()
-const upperCaseEnv = process.env.NODE_ENV.toUpperCase()
 const sessionConfig = { maxAge: 86400000 * 7, renew: true } // Week-long and renewed sessions
 
 // Connect database
-const mongoURI = process.env[`DB_URI_${upperCaseEnv}`]
-console.log(upperCaseEnv)
+const mongoURI = process.env.DB_URI
+console.log(process.env.NODE_ENV.toUpperCase())
 console.log(mongoURI)
 mongoose
   .connect(mongoURI, {
@@ -57,12 +54,10 @@ router.use('/user', userRouter.routes())
 router.use('/campaigns', campaignRouter.routes())
 router.use('/collab', collabRouter.routes())
 router.use('/youtuber', youtubeRouter.routes())
-router.use('/admin', adminRouter.routes())
-router.use('/review', reviewRouter.routes())
 router.use('/conversations', conversationRouter.routes())
 
 // Middleware
-app.use(cors({ origin: process.env[`APP_URL_${upperCaseEnv}`], credentials: true }))
+app.use(cors({ origin: process.env.APP_URL, credentials: true }))
 app.use(morgan('dev'))
 app.use(handleGlobalErrors)
 app.use(bodyParser())

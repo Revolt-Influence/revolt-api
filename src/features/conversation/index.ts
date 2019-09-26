@@ -148,7 +148,7 @@ async function sendMessageEmailNotification({
       locals: {
         senderUsername,
         username: _recipient.name,
-        conversationLink: `${process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`]}/${
+        conversationLink: `${process.env.APP_URL}/${
           creatorAuthor != null ? 'creator' : 'brand'
         }}/experiences/${conversation}`,
         message: text,

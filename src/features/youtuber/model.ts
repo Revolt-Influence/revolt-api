@@ -1,9 +1,18 @@
 import * as mongoose from 'mongoose'
 import { prop, getModelForClass, arrayProp } from '@hasezoey/typegoose'
 import { loadType } from 'mongoose-float'
-import { AudienceMetric, percentageOptions } from '../influencer/model'
 
-const Float = loadType(mongoose)
+const Float = loadType(mongoose, 4)
+
+const percentageOptions = { type: Float, max: 100, min: 0, required: true }
+
+class AudienceMetric {
+  @prop()
+  name: string
+
+  @prop(percentageOptions)
+  percentage: number
+}
 
 class YoutubeVideo {
   @prop()

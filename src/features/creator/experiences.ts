@@ -65,9 +65,7 @@ async function notifyNewCampaignProposition(
       campaignName: campaign.name,
       username: creator.name,
       message: proposition.message,
-      dashboardLink: `${
-        process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`]
-      }/brand/campaigns/${experienceId}/dashboard/propositions`,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${experienceId}/dashboard/propositions`,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
