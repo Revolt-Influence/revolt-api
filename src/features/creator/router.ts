@@ -5,7 +5,6 @@ import {
   signupCreator,
   claimCreatorInstagramAccount,
   getFullCreatorById,
-  checkInstagramToken,
   saveCreatorPostalAddress,
   saveCreatorProfile,
   updateCreatorContactInfo,
@@ -16,7 +15,6 @@ import { getExperiencesPage } from './experiences'
 import { ISessionState } from '../session'
 import { linkYoutubeChannel } from '../youtuber'
 import { errorNames, CustomError } from '../../utils/errors'
-import { saveInstagramPostsFromData } from '../influencer'
 
 const router = new Router()
 
@@ -66,25 +64,6 @@ router.post('/postalAddress', async ctx => {
   const creator = ctx.state.user as DocumentType<Creator>
   const updatedCreator = await saveCreatorPostalAddress(creator._id, postalAddress)
   ctx.body = { creator: updatedCreator }
-})
-
-router.post('/linkInstagram', async ctx => {
-  const { username } = ctx.request.body as {
-    username: string
-  }
-  const creator = await CreatorModel.findById(ctx.state.user._id)
-  const updatedCreator = await claimCreatorInstagramAccount(creator, username)
-  ctx.body = { creator: updatedCreator }
-})
-
-router.post('/checkInstagramToken', async ctx => {
-  const { influencerData } = ctx.request.body as { influencerData: any }
-  const creator = await CreatorModel.findById(ctx.state.user._id)
-  const updatedCreator = await checkInstagramToken(creator, influencerData)
-  // Save posts in the background
-  saveInstagramPostsFromData(creator.instagramUsername, influencerData)
-  const { experiences, totalPages } = await getExperiencesPage(creator._id)
-  ctx.body = { creator: updatedCreator, experiences, totalPages }
 })
 
 router.post('/linkYoutubeChannel', async ctx => {

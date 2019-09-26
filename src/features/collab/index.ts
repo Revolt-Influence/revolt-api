@@ -33,9 +33,7 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       username: (collab.creator as Creator).name,
       campaignName: campaign.name,
       productName: campaign.settings.gift.name,
-      collabLink: `${
-        process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`]
-      }/creator/experiences/${collab._id}`,
+      collabLink: `${process.env.APP_URL}/creator/experiences/${collab._id}`,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',

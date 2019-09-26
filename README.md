@@ -12,12 +12,8 @@
 
 1. `git clone https://github.com/remi2j/revolt-graphql.git`
 2. `yarn install`
-3. `cp .env.sample .env` and use your variables
-4. [Install MongoDB](https://treehouse.github.io/installation-guides/mac/mongo-mac.html) (`brew update` then `brew install mongodb`)
-5. Create database folder: `mkdir -p <MONGO_PATH>` (<MONGO_PATH> can be anything, but leave it out of this directory)
-6. Check if Mongo has the right authorizations: ```sudo chown -R `id -un` /data/db```
-7. Create a file named `.env` at the root of this folder, and enter `DB_HOST=localhost:27017`
-8. Run `mongod --port 27017 -dbpath <MONGO_PATH>`
+3. [Install MongoDB](https://treehouse.github.io/installation-guides/mac/mongo-mac.html) (`brew update` then `brew install mongodb`) and run it locally
+4. `cp .env.sample .env` and use your variables, including your Mongo instance
 
 ## Commands
 

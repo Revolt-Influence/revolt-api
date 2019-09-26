@@ -106,9 +106,7 @@ async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<v
     template: 'newCampaign',
     locals: {
       campaignName: campaign.name,
-      dashboardLink: `${
-        process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`]
-      }/brand/campaigns/${campaign._id}/dashboard?tab=brief`,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=brief`,
       brandName: (campaign.settings.brand as DocumentType<Brand>).name,
       brandEmail: campaign.owner,
       ambassador: ambassador && ambassador.email,

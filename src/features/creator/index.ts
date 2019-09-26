@@ -5,8 +5,6 @@ import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
 import { Creator, CreatorModel, PostalAddress, CreatorStatus } from './model'
 import { UserModel } from '../user/model'
-import { Influencer, InfluencerModel } from '../influencer/model'
-import { getLastPostCaptionFromData, getInfluencerFromData } from '../influencer'
 import { uploadToCloudinary } from '../../utils/pictures'
 import { CollabModel, CollabStatus } from '../collab/model'
 import { ConversationModel } from '../conversation/model'
@@ -143,107 +141,6 @@ async function claimCreatorInstagramAccount(
   return getFullCreatorById(creator._id)
 }
 
-async function createInfluencerFromData(data: any): Promise<DocumentType<Influencer>> {
-  // Get very basic profile info right away
-  const influencerDraft = await getInfluencerFromData(data)
-  // Use findOneAndUpdate to get upsert (create or update)
-  const createdInfluencer = await InfluencerModel.findOneAndUpdate(
-    { username: influencerDraft.username },
-    {
-      $set: influencerDraft,
-    },
-    { upsert: true, new: true }
-  )
-
-  // More advanced Instagram scraping in the background, including the community data
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      // No await, do it in the background
-      superagent.get(
-        `${process.env.PYTHON_API_URL}/?username=${createdInfluencer.username}&key=${
-          process.env.PYTHON_API_KEY
-        }`
-      )
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  // Return created influencer
-  return createdInfluencer
-}
-
-async function checkInstagramToken(
-  creator: DocumentType<Creator>,
-  influencerData: any
-): Promise<DocumentType<Creator>> {
-  const { instagramToken, instagramUsername } = creator
-  const caption = await getLastPostCaptionFromData(influencerData)
-  const influencer = await createInfluencerFromData(influencerData)
-  // Only allow less than 5k followers if admin
-  if (
-    influencer.likes < MINIMUM_INSTAGRAM_LIKES &&
-    !ADMIN_USERNAMES.includes(influencer.username)
-  ) {
-    throw new CustomError(400, errorNames.notEnoughFollowers)
-  }
-  if (caption.includes(`#check${instagramToken}`)) {
-    // Instagram is legit, mark as verified
-    creator.instagramIsVerified = true
-    // Save relation
-    creator.instagram = influencer._id
-    // Save default picture
-    if (creator.picture == null) {
-      // Upload instagram picture to cloudinary
-      creator.picture = await uploadToCloudinary(influencer.picture_url, 'creator_picture')
-    }
-    // Save default name
-    if (creator.name == null) {
-      creator.name = influencer.username
-    }
-    await creator.save()
-
-    const maybeAmbassador = await CreatorModel.findById(creator.ambassador)
-
-    // Notify the team that a creator signed up in the background
-    emailService.send({
-      template: 'creatorSignup',
-      locals: {
-        username: instagramUsername,
-        email: creator.email,
-        instagramToken: creator.instagramToken,
-        ambassadorEmail: maybeAmbassador && maybeAmbassador.email,
-        ambassadorName: maybeAmbassador && maybeAmbassador.name,
-      },
-      message: {
-        from: 'Revolt <noreply@revolt.club>',
-        to: process.env.CAMPAIGN_MANAGER_EMAIL,
-      },
-    })
-
-    return getFullCreatorById(creator._id)
-  }
-  // Wrong code
-  throw new CustomError(400, errorNames.invalidToken)
-}
-
-async function attachInfluencerToCreator(
-  influencer: DocumentType<Influencer>
-): Promise<DocumentType<Creator>> {
-  // Use Regex to ignore casing, although all usernames should be lower
-  const maybeCreator = await CreatorModel.findOne({
-    instagramUsername: {
-      $regex: new RegExp(`^${influencer.username}$`, 'i'),
-    },
-  })
-  if (maybeCreator != null) {
-    maybeCreator.instagram = influencer._id
-    await maybeCreator.save()
-  } else {
-    return null
-  }
-}
-
 async function saveCreatorProfile(
   creatorId: mongoose.Types.ObjectId,
   profile: { name: string; picture: string }
@@ -314,7 +211,7 @@ async function setCreatorStatus(
     template: newStatus === CreatorStatus.blocked ? 'creatorRefused' : 'creatorAccepted',
     locals: {
       name: creator.name,
-      homepageLink: process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`],
+      homepageLink: process.env.APP_URL,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -360,9 +257,7 @@ async function getAmbassadorStatus(creatorId: string): Promise<AmbassadorStatus>
 export {
   signupCreator,
   claimCreatorInstagramAccount,
-  attachInfluencerToCreator,
   getFullCreatorById,
-  checkInstagramToken,
   saveCreatorPostalAddress,
   saveCreatorProfile,
   updateCreatorContactInfo,

@@ -13,7 +13,7 @@ interface ILoginInfo {
 
 const router = new Router()
 
-// Retrieve connected user (brand or influencer)
+// Retrieve connected user (brand or creator)
 router.get('/', async ctx => {
   if (ctx.isAuthenticated()) {
     const { sessionType, ...user } = ctx.state.user as ISessionState
@@ -42,7 +42,7 @@ router.get('/', async ctx => {
   }
 })
 
-// Start session (login) for brand or influencer
+// Start session (login) for brand or creator
 router.post('/', async ctx => {
   const loginInfo = ctx.request.body as ILoginInfo
   const { email, plainPassword } = loginInfo
@@ -67,7 +67,7 @@ router.post('/', async ctx => {
   }
 })
 
-// Delete session (logout) for brand or influencer
+// Delete session (logout) for brand or creator
 router.delete('/', async ctx => {
   await ctx.logout()
   ctx.body = 'Logged out'

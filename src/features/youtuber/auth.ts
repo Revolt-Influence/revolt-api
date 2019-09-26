@@ -22,7 +22,7 @@ const ADMIN_CHANNEL_IDS = ['UCPtVsdtkwP3YNmObyTy1Lkw', 'UCahnnOrHxWb-DqGg6EgGuxA
 const oauth = new google.auth.OAuth2(
   CLIENT_ID,
   process.env.GOOGLE_OAUTH_SECRET,
-  process.env[`APP_URL_${process.env.NODE_ENV.toUpperCase()}`]
+  process.env.APP_URL
 )
 google.options({
   auth: oauth,
