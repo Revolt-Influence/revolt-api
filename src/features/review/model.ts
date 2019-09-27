@@ -1,43 +1,48 @@
 import * as mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp } from '@hasezoey/typegoose'
+import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
+import { registerEnumType, Field, ObjectType } from 'type-graphql'
 import { CreatorModel, Creator } from '../creator/model'
 
 enum ReviewFormat {
-  instagramStory = 'Instagram story',
-  instagramPost = 'Instagram post',
-  youtubeVideo = 'Youtube video',
+  YOUTUBE_VIDEO = 'Youtube video',
 }
+registerEnumType(ReviewFormat, {
+  name: 'ReviewFormat',
+  description: 'What platform the creator will use to promote the game',
+})
 
+@ObjectType({ description: 'A review on a social media' })
+@modelOptions({ schemaOptions: { timestamps: true } })
 class Review {
+  @Field(() => ReviewFormat, { description: 'Platform of the review' })
   @prop({ enum: ReviewFormat })
   format: ReviewFormat
 
-  @arrayProp({ items: String })
-  medias: string[]
-
+  @Field({ description: 'Link to view the review' })
   @prop()
   link: string
 
+  @Field()
   @prop()
-  likes?: number
+  likeCount?: number
 
+  @Field()
   @prop()
-  comments?: number
+  commentCount: number
 
+  @Field()
   @prop()
-  views?: number
+  viewCount: number
 
+  @Field(() => Creator, { description: 'Creator who made the review' })
   @prop({ ref: Creator })
   creator: Ref<Creator>
 
-  @prop()
-  postDate: number
+  @Field()
+  createdAt: Readonly<Date>
 
-  @prop()
-  lastUpdateDate: number
-
-  @prop({ default: Date.now })
-  submitDate: number
+  @Field()
+  updatedAt: Readonly<Date>
 }
 
 const ReviewModel = getModelForClass(Review)

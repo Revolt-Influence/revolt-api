@@ -1,58 +1,76 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, modelOptions } from '@hasezoey/typegoose'
+import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
 import { Creator } from '../creator/model'
 
 enum Plan {
-  free = 'free',
-  premium = 'premium',
-  admin = 'admin',
+  FREE = 'free',
+  PREMIUM = 'premium',
 }
 
+registerEnumType(Plan, {
+  name: 'Plan',
+  description: 'Whether the user has paid or not',
+})
+
+@ObjectType({ description: 'A user is a signed up brand member' })
+@modelOptions({ schemaOptions: { timestamps: true } })
 class User {
+  @Field(() => ID)
+  _id: mongoose.Types.ObjectId
+
+  @Field({ description: 'Used for login and notification and marketing emails' })
   @prop({ lowercase: true, trim: true })
   email: string
 
-  @prop({ default: Date.now })
-  signupDate: number
-
-  @prop({ default: false })
-  hasVerifiedEmail?: boolean
-
+  @Field({ description: 'When the user switched to premium', nullable: true })
   @prop()
-  verifyEmailToken?: string
+  switchedToPremiumAt: Date
 
-  @prop()
-  switchToPremiumDate: number
-
+  @Field({ description: 'Phone number is used for demo, customer support and conflicts' })
   @prop()
   phone: string
 
   @prop()
   passwordHash: string
 
+  @Field(() => Plan, { description: 'Whether the user has paid' })
   @prop({ enum: Plan })
   plan: Plan
 
+  @Field({ description: 'Got from Stripe, used to tell what card the user used' })
   @prop()
   creditCardLast4: string
 
+  @Field({ description: 'Used to retrieve a Stripe customer when he gets back to Premium' })
   @prop()
-  customerId: string
+  stripeCustomerId: string
 
+  @Field()
   @prop()
-  resetPasswordToken: string
+  resetPasswordToken?: string
 
+  @Field()
   @prop()
-  resetPasswordExpires: number
+  resetPasswordExpiresAt?: number
 
+  @Field({ description: 'Only used to score the lead, not a relation' })
   @prop()
   company: string
 
-  @prop()
-  wantsHelp: string
+  @Field({ description: 'Whether he works for Revolt' })
+  @prop({ default: false })
+  isAdmin: boolean
 
+  @Field(() => Creator, { description: 'The creator who signed him up' })
   @prop({ ref: Creator })
   ambassador?: Ref<Creator>
+
+  @Field()
+  createdAt: Readonly<Date>
+
+  @Field()
+  updatedAt: Readonly<Date>
 }
 
 const UserModel = getModelForClass(User)

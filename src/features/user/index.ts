@@ -70,10 +70,6 @@ async function updateUserInfo(
   const user = await UserModel.findOne({ email: currentEmail })
   user.email = email
   user.phone = phone
-  if (currentEmail !== email) {
-    // Force email verification
-    user.hasVerifiedEmail = false
-  }
   await user.save()
 
   // Update user campaigns

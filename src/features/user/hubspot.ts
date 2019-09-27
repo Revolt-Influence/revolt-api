@@ -59,13 +59,9 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
       value: user.company == null ? '' : user.company,
     },
     {
-      property: 'confirmed_email',
-      value: user.hasVerifiedEmail == null ? false : user.hasVerifiedEmail,
-    },
-    {
       property: 'app_signup',
       // Round to nearest day by substracting modulo 1 day in milliseconds
-      value: user.signupDate - (user.signupDate % (1000 * 60 * 60 * 24)),
+      value: user.createdAt - (user.createdAt % (1000 * 60 * 60 * 24)),
     },
   ]
 }

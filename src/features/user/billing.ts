@@ -26,7 +26,7 @@ async function createCustomer(token: string, email: string, fullName: string): P
     { email },
     {
       $set: {
-        customerId: customer.id,
+        stripeCustomerId: customer.id,
         creditCardLast4: (customer.sources.data[0] as any).last4,
       },
     }
@@ -54,15 +54,15 @@ async function switchToPremium(
 
   // Create or retrieve Stripe customer
   const fullName = `${firstName} ${lastName}`
-  let customerId: string
-  if (currentUser.customerId == null) {
-    customerId = await createCustomer(token, email, fullName)
-    console.log('new stripe customer', customerId)
+  let stripeCustomerId: string
+  if (currentUser.stripeCustomerId == null) {
+    stripeCustomerId = await createCustomer(token, email, fullName)
+    console.log('new stripe customer', stripeCustomerId)
   } else {
-    const { customerId: currentCustomerId } = currentUser
-    customerId = currentCustomerId
+    const { stripeCustomerId: currentCustomerId } = currentUser
+    stripeCustomerId = currentCustomerId
     // Find customer object
-    const customer = await stripe.customers.retrieve(currentUser.customerId)
+    const customer = await stripe.customers.retrieve(currentUser.stripeCustomerId)
     console.log('existing customer', customer.id)
     // Restore last 4 digits in database
     await UserModel.findOneAndUpdate(
@@ -77,7 +77,7 @@ async function switchToPremium(
 
   // Subscribe customer to Premium plan
   await stripe.subscriptions.create({
-    customer: customerId,
+    customer: stripeCustomerId,
     plan: premiumPlanId,
   })
   console.log('subscription created')
@@ -116,7 +116,7 @@ async function cancelPremium(email: string): Promise<DocumentType<User>> {
   }
 
   // Find Stripe customer from user
-  const customer = await stripe.customers.retrieve(currentUser.customerId)
+  const customer = await stripe.customers.retrieve(currentUser.stripeCustomerId)
   if (customer == null) {
     throw new CustomError(400, errorNames.customerNotFound)
   }
@@ -158,13 +158,13 @@ async function updateCreditCard(email: string, token: string): Promise<DocumentT
   }
 
   // Find existing customer
-  const customer = await stripe.customers.retrieve(user.customerId)
+  const customer = await stripe.customers.retrieve(user.stripeCustomerId)
   if (customer == null) {
     throw new CustomError(400, errorNames.customerNotFound)
   }
 
   // Update customer with new card
-  const updatedCustomer = await stripe.customers.update(user.customerId, { source: token })
+  const updatedCustomer = await stripe.customers.update(user.stripeCustomerId, { source: token })
 
   // Save new card last 4 digits in database
   return UserModel.findOneAndUpdate(

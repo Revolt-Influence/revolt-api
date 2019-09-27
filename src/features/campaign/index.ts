@@ -1,5 +1,5 @@
 import { mongoose, DocumentType } from '@hasezoey/typegoose'
-import { Campaign, CampaignModel, initialCampaignSettings } from './model'
+import { Campaign, CampaignModel } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { CollabModel, Collab } from '../collab/model'
 import { getCampaignCollabs } from '../collab'
@@ -16,8 +16,6 @@ async function createCampaign(owner: string): Promise<DocumentType<Campaign>> {
   const campaign = new CampaignModel({
     owner,
     name: 'Ma nouvelle campagne',
-    creationDate: Date.now(),
-    settings: initialCampaignSettings,
   })
   // Save campaign to database
   await campaign.save()
@@ -84,8 +82,8 @@ async function getUserCampaignsAndCollabs(
   collabs: DocumentType<Collab>[]
   totalPages: number
 }> {
-  const { plan } = await UserModel.findOne({ email })
-  const { campaigns, totalPages } = await (plan === 'admin'
+  const { isAdmin } = await UserModel.findOne({ email })
+  const { campaigns, totalPages } = await (isAdmin
     ? getAdminCampaigns(email)
     : getUserCampaigns(email))
   const collabsPromises = campaigns.map(async _campaign => getCampaignCollabs(_campaign._id))
@@ -107,7 +105,7 @@ async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<v
     locals: {
       campaignName: campaign.name,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=brief`,
-      brandName: (campaign.settings.brand as DocumentType<Brand>).name,
+      brandName: (campaign.brand as DocumentType<Brand>).name,
       brandEmail: campaign.owner,
       ambassador: ambassador && ambassador.email,
       isPremium: brandUser.plan !== 'free',
@@ -132,17 +130,19 @@ async function toggleArchiveCampaign(
   return campaign
 }
 
-async function deleteCampaign(campaignId: mongoose.Types.ObjectId, email: string): Promise<void> {
+async function deleteCampaign(
+  campaignId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId
+): Promise<void> {
   // Get campaign and user from Mongo
   const campaign = await getCampaignById(campaignId)
-  const user = await UserModel.findOne({ email })
-  const isAdmin = user.plan === 'admin'
-  // Only allow the user to delete a campaign
-  if (campaign.owner !== email && !isAdmin) {
+  const user = await UserModel.findById(userId)
+  // Only allow the owner or an admin to delete a campaign
+  if (campaign.owner !== userId && !user.isAdmin) {
     throw new CustomError(401, errorNames.unauthorized)
   }
   // Only allow if the campaign isn't online
-  if (campaign.isReviewed && !isAdmin) {
+  if (campaign.isReviewed && !user.isAdmin) {
     throw new CustomError(401, errorNames.unauthorized)
   }
   // Delete all collabs linked to the campaign
@@ -162,7 +162,7 @@ async function reviewCampaign(
 
 async function saveCampaignSettings(
   campaignId: mongoose.Types.ObjectId,
-  newCampaign: Campaign
+  updatedCampaign: Campaign
 ): Promise<DocumentType<Campaign>> {
   // Check if campaign exists
   const campaign = await getCampaignById(campaignId)
@@ -171,40 +171,39 @@ async function saveCampaignSettings(
   }
 
   // Separate brand from other settings since it's stored in another collection
-  const { brand } = newCampaign.settings
+  const { brand: updatedBrand } = updatedCampaign
 
   // Save other settings
-  campaign.name = newCampaign.name
-  // campaign.settings = { ...campaign.settings, ...otherSettings }
+  campaign.name = updatedCampaign.name
 
   // Check if the campaign already has an associated brand in Mongo
-  const existingBrand = await BrandModel.findById(campaign.settings && campaign.settings.brand)
+  const existingBrand = await BrandModel.findById(campaign.brand)
   if (existingBrand == null) {
     // Find campaign owner to link him to the brand
     const user = await UserModel.findOne({ email: campaign.owner })
     // Brand does not exist, create relation
     const newBrand = new BrandModel({
-      ...(brand as Brand),
+      ...(updatedBrand as Brand),
       isSignedUp: true,
       users: [user._id],
     } as Brand)
     await newBrand.save()
-    campaign.settings.brand = newBrand._id
+    campaign.brand = newBrand._id
   } else {
     // Brand already exists, update it
-    Object.entries(brand).forEach(_entry => {
+    Object.entries(updatedBrand).forEach(_entry => {
       const [key, value] = _entry
       existingBrand[key] = value
     })
     await existingBrand.save()
-    campaign.settings.brand = existingBrand._id
+    campaign.brand = existingBrand._id
   }
 
   // Apply all settings changes
-  campaign.settings.brief = newCampaign.settings.brief
-  campaign.settings.gift = newCampaign.settings.gift
-  campaign.settings.target = newCampaign.settings.target
-  campaign.settings.task = newCampaign.settings.task
+  campaign.description = updatedCampaign.description
+  campaign.rules = updatedCampaign.rules
+  campaign.product = updatedCampaign.product
+  campaign.targetAudience = updatedCampaign.targetAudience
 
   // Save and return populated campaign
   await campaign.save()
