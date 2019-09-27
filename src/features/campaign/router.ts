@@ -13,7 +13,6 @@ import {
 } from '.'
 import { Campaign } from './model'
 import { applyToExperience, getExperiencesPage } from '../creator/experiences'
-import { CollabProposition } from '../collab/model'
 import { Creator, CreatorStatus } from '../creator/model'
 
 const router = new Router()
@@ -72,18 +71,18 @@ router.post('/:campaignId/toggleArchive', async ctx => {
 
 router.post('/:campaignId/apply', async ctx => {
   const { campaignId } = ctx.params as { campaignId: string }
-  const { proposition } = ctx.request.body as { proposition: CollabProposition }
+  const { message } = ctx.request.body as { message: string }
   // Make sure it's a verified creator
   if (
     ctx.state.user.sessionType !== 'creator' ||
-    (ctx.state.user as Creator).status !== CreatorStatus.verified
+    (ctx.state.user as Creator).status !== CreatorStatus.VERIFIED
   ) {
     ctx.throw(401, errorNames.unauthorized)
   }
   const createdCollab = await applyToExperience(
     mongoose.Types.ObjectId(campaignId),
     ctx.state.user._id,
-    proposition
+    message
   )
   ctx.body = { collab: createdCollab }
 })

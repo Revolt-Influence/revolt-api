@@ -9,8 +9,8 @@ function getAudienceFromReport(report: IChannelReport): YoutubeAudience {
   const totalViews = totalCountryViews > report.viewCount ? totalCountryViews : report.viewCount
   // Format all data into ready-to-save object
   const audience: YoutubeAudience = {
-    topAges: report.audienceAge.map(_age => ({ name: _age[0], percentage: _age[1] })),
-    topCountries: report.audienceCountry.map(_country => ({
+    ageGroups: report.audienceAge.map(_age => ({ name: _age[0], percentage: _age[1] })),
+    countries: report.audienceCountry.map(_country => ({
       name: _country[0],
       percentage: (_country[1] * 100) / totalViews,
     })),

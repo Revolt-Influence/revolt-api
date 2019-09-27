@@ -1,12 +1,13 @@
 import * as mongoose from 'mongoose'
 import { prop, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
 import { loadType } from 'mongoose-float'
-import { Field, ObjectType } from 'type-graphql'
+import { Field, ObjectType, ID } from 'type-graphql'
 
 const Float = loadType(mongoose, 4)
 
 const percentageOptions = { type: Float, max: 100, min: 0, required: true }
 
+@ObjectType()
 class AudienceMetric {
   @Field()
   @prop()
@@ -17,6 +18,7 @@ class AudienceMetric {
   percentage: number
 }
 
+@ObjectType()
 class YoutubeVideo {
   @Field()
   @prop()
@@ -26,21 +28,27 @@ class YoutubeVideo {
   @prop()
   thumbnail: string
 
+  @Field({ description: 'Unique Youtube ID (not Mongoose-related)' })
   @prop()
   videoId: string
 
+  @Field({ description: 'Link to Youtube video' })
   @prop()
   url: string
 
+  @Field()
   @prop()
   viewCount: number
 
+  @Field()
   @prop()
   commentCount: number
 
+  @Field()
   @prop()
   likeCount: number
 
+  @Field(() => Date, { description: 'When the video was published on Youtube' })
   @prop()
   publishedAt: Date
 }
@@ -69,10 +77,11 @@ interface IChannelReport {
 @ObjectType()
 class YoutubeAudience {
   @Field(() => [AudienceMetric])
-  @arrayProp({ _id: false, items: AudienceMetric })
+  @arrayProp({ _id: false, items: AudienceMetric, type: AudienceMetric })
   ageGroups: AudienceMetric[]
 
-  @arrayProp({ _id: false, items: AudienceMetric })
+  @Field(() => [AudienceMetric])
+  @arrayProp({ _id: false, items: AudienceMetric, type: AudienceMetric })
   countries: AudienceMetric[]
 
   @prop(percentageOptions)
@@ -85,6 +94,9 @@ class YoutubeAudience {
 @ObjectType()
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Youtuber {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
   @Field({ description: 'Channel title' })
   @prop()
   name: string // channel title
@@ -125,10 +137,10 @@ class Youtuber {
   @prop()
   uploadsPlaylistId: string
 
-  @Field()
+  @Field(() => Date)
   createdAt: Readonly<Date>
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Readonly<Date>
 }
 

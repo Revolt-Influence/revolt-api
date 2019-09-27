@@ -35,10 +35,6 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
       value: user.email,
     },
     {
-      property: 'should_contact',
-      value: user.wantsHelp == null ? null : user.wantsHelp,
-    },
-    {
       property: 'uses_app',
       value: true,
     },
@@ -61,7 +57,7 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
     {
       property: 'app_signup',
       // Round to nearest day by substracting modulo 1 day in milliseconds
-      value: user.createdAt - (user.createdAt % (1000 * 60 * 60 * 24)),
+      value: user.createdAt.getTime() - (user.createdAt.getTime() % (1000 * 60 * 60 * 24)),
     },
   ]
 }

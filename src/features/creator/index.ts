@@ -3,7 +3,7 @@ import * as superagent from 'superagent'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
-import { Creator, CreatorModel, PostalAddress, CreatorStatus } from './model'
+import { Creator, CreatorModel, CreatorStatus } from './model'
 import { UserModel } from '../user/model'
 import { uploadToCloudinary } from '../../utils/pictures'
 import { CollabModel, CollabStatus } from '../collab/model'
@@ -122,23 +122,9 @@ async function signupCreator(
   // Hash password
   const hash = await bcrypt.hash(plainPassword, SALT_ROUNDS)
   unverifiedCreator.passwordHash = hash
-  // Prepare token
-  const randomNumberToken = Math.floor(1000 + Math.random() * 9000)
-  unverifiedCreator.instagramToken = randomNumberToken.toString()
   // Save unverified profile to mongoDB
   await unverifiedCreator.save()
   return unverifiedCreator
-}
-
-async function claimCreatorInstagramAccount(
-  creator: DocumentType<Creator>,
-  username: string
-): Promise<DocumentType<Creator>> {
-  // Save the claimed username
-  creator.instagramUsername = username.toLowerCase().trim()
-  await creator.save()
-  // Populate and remove certain fields
-  return getFullCreatorById(creator._id)
 }
 
 async function saveCreatorProfile(
@@ -154,16 +140,6 @@ async function saveCreatorProfile(
   // Update creator in Mongo
   creator.name = profile.name
   creator.picture = profile.picture
-  await creator.save()
-  return getFullCreatorById(creator._id)
-}
-
-async function saveCreatorPostalAddress(
-  creatorId: string,
-  postalAddress: PostalAddress
-): Promise<DocumentType<Creator>> {
-  const creator = await CreatorModel.findOne(creatorId)
-  creator.postalAddress = postalAddress
   await creator.save()
   return getFullCreatorById(creator._id)
 }
@@ -200,15 +176,15 @@ async function setCreatorStatus(
   creator.status = newStatus
   await creator.save()
 
-  if (newStatus === CreatorStatus.blocked) {
+  if (newStatus === CreatorStatus.BLOCKED) {
     // Get rid of all unaccepted collabs and conversations
-    await CollabModel.deleteMany({ creator: creatorId, status: CollabStatus.proposed })
+    await CollabModel.deleteMany({ creator: creatorId, status: CollabStatus.APPLIED })
     await ConversationModel.deleteMany({ creator: creatorId })
   }
 
   // Send email notification to creator in the background
   emailService.send({
-    template: newStatus === CreatorStatus.blocked ? 'creatorRefused' : 'creatorAccepted',
+    template: newStatus === CreatorStatus.BLOCKED ? 'creatorRefused' : 'creatorAccepted',
     locals: {
       name: creator.name,
       homepageLink: process.env.APP_URL,
@@ -256,9 +232,7 @@ async function getAmbassadorStatus(creatorId: string): Promise<AmbassadorStatus>
 
 export {
   signupCreator,
-  claimCreatorInstagramAccount,
   getFullCreatorById,
-  saveCreatorPostalAddress,
   saveCreatorProfile,
   updateCreatorContactInfo,
   getCreatorsPage,

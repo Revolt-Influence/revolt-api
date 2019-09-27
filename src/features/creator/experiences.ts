@@ -1,6 +1,6 @@
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CampaignModel, Campaign } from '../campaign/model'
-import { Collab, CollabModel, CollabProposition } from '../collab/model'
+import { Collab, CollabModel, CollabStatus } from '../collab/model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { getCampaignById } from '../campaign'
 import { emailService } from '../../utils/emails'
@@ -52,7 +52,7 @@ async function getExperiencesPage(
 async function notifyNewCampaignProposition(
   experienceId: mongoose.Types.ObjectId,
   creatorId: mongoose.Types.ObjectId,
-  proposition: CollabProposition
+  message: string
 ): Promise<void> {
   // Fetch data that's needed in the email
   const campaign = await getCampaignById(experienceId)
@@ -61,11 +61,11 @@ async function notifyNewCampaignProposition(
   await emailService.send({
     template: 'newCollabProposition',
     locals: {
-      brandName: (campaign.settings.brand as Brand).name,
+      brandName: (campaign.brand as Brand).name,
       campaignName: campaign.name,
       username: creator.name,
-      message: proposition.message,
-      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${experienceId}/dashboard/propositions`,
+      message,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${experienceId}/dashboard?tab=propositions`,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -77,7 +77,7 @@ async function notifyNewCampaignProposition(
 async function applyToExperience(
   experienceId: mongoose.Types.ObjectId,
   creatorId: mongoose.Types.ObjectId,
-  proposition: CollabProposition
+  message: string
 ): Promise<DocumentType<Collab>> {
   // Check if creator hasn't already applied
   const maybeExistingCollab = await CollabModel.findOne({
@@ -90,12 +90,14 @@ async function applyToExperience(
   // Find the collab brand
   const campaign = await CampaignModel.findById(experienceId)
   // Find or creator matching conversation
-  const conversation = await getOrCreateConversationByParticipants(creatorId, campaign.settings
-    .brand as mongoose.Types.ObjectId)
+  const conversation = await getOrCreateConversationByParticipants(
+    creatorId,
+    campaign.brand as mongoose.Types.ObjectId
+  )
   // Send motivation message
   await sendMessage({
     conversationId: conversation._id,
-    text: proposition.message,
+    text: message,
     creatorAuthorId: creatorId,
     isAdminAuthor: false,
     isNotification: true,
@@ -104,15 +106,15 @@ async function applyToExperience(
   const collab = new CollabModel({
     campaign: experienceId,
     creator: creatorId,
-    status: 'proposed',
+    status: CollabStatus.APPLIED,
     deadline: null,
-    proposition,
+    message,
     conversation: conversation._id,
-  } as Collab)
+  } as Partial<Collab>)
   await collab.save()
 
   // Notify the brand via email in the background (no async needed)
-  notifyNewCampaignProposition(experienceId, creatorId, proposition)
+  notifyNewCampaignProposition(experienceId, creatorId, message)
 
   return collab
 }

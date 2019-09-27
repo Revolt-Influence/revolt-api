@@ -25,10 +25,10 @@ class Brand {
   @arrayProp({ itemsRef: 'User' })
   users: Ref<User>[]
 
-  @Field()
+  @Field(() => Date)
   createdAt: Readonly<Date>
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Readonly<Date>
 }
 

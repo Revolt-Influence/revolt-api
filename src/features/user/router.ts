@@ -8,7 +8,7 @@ import {
   updateCreditCard,
   changeUserOrCreatorPassword,
   IUpdateUserInfoPayload,
-  updateUserInfo,
+  updateUserContactInfo,
 } from '.'
 import { User } from './model'
 import { errorNames } from '../../utils/errors'
@@ -33,7 +33,7 @@ router.post('/contactInfo', async ctx => {
   }
   const { email } = ctx.state.user
   const newUserInfo = ctx.request.body as IUpdateUserInfoPayload
-  const updatedUser = await updateUserInfo(email, newUserInfo)
+  const updatedUser = await updateUserContactInfo(email, newUserInfo)
   ctx.body = updatedUser
 })
 

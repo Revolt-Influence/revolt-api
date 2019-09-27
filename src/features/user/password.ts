@@ -23,12 +23,12 @@ async function sendResetPasswordEmail(email: string): Promise<void> {
   const token = crypto.randomBytes(20).toString('hex')
   if (maybeUser != null) {
     maybeUser.resetPasswordToken = token
-    maybeUser.resetPasswordExpiresAt = Date.now() + 3600000
+    maybeUser.resetPasswordExpiresAt = new Date(Date.now() + 3600000)
     await maybeUser.save()
   }
   if (maybeCreator != null) {
     maybeCreator.resetPasswordToken = token
-    maybeCreator.resetPasswordExpires = Date.now() + 3600000
+    maybeCreator.resetPasswordExpiresAt = new Date(Date.now() + 3600000)
     await maybeCreator.save()
   }
 
@@ -58,8 +58,8 @@ async function resetPasswordViaEmail(token: string, newClearPassword: string): P
   // Check if token is valid
   const unknownEmail = maybeUser == null && maybeCreator == null
   const now = Date.now()
-  const expiredUser = maybeUser != null && maybeUser.resetPasswordExpiresAt < now
-  const expiredCreator = maybeCreator != null && maybeCreator.resetPasswordExpires < now
+  const expiredUser = maybeUser != null && maybeUser.resetPasswordExpiresAt.getSeconds() < now
+  const expiredCreator = maybeCreator != null && maybeCreator.resetPasswordExpiresAt.getTime() < now
   if (unknownEmail || expiredUser || expiredCreator) {
     // Handle errors
     throw new CustomError(400, errorNames.invalidLink)
@@ -75,7 +75,7 @@ async function resetPasswordViaEmail(token: string, newClearPassword: string): P
   } else if (maybeCreator != null) {
     maybeCreator.passwordHash = newPasswordHash
     maybeCreator.resetPasswordToken = null
-    maybeCreator.resetPasswordExpires = null
+    maybeCreator.resetPasswordExpiresAt = null
     await maybeCreator.save()
   }
 }

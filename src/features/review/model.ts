@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { registerEnumType, Field, ObjectType } from 'type-graphql'
+import { registerEnumType, Field, ObjectType, ID } from 'type-graphql'
 import { CreatorModel, Creator } from '../creator/model'
 
 enum ReviewFormat {
@@ -14,6 +14,9 @@ registerEnumType(ReviewFormat, {
 @ObjectType({ description: 'A review on a social media' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Review {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
   @Field(() => ReviewFormat, { description: 'Platform of the review' })
   @prop({ enum: ReviewFormat })
   format: ReviewFormat
@@ -21,6 +24,9 @@ class Review {
   @Field({ description: 'Link to view the review' })
   @prop()
   link: string
+
+  @Field({ description: 'Image to preview the review. Not Cloudinary' })
+  thumbnail: string
 
   @Field()
   @prop()
@@ -38,10 +44,10 @@ class Review {
   @prop({ ref: Creator })
   creator: Ref<Creator>
 
-  @Field()
+  @Field(() => Date)
   createdAt: Readonly<Date>
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Readonly<Date>
 }
 

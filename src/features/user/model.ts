@@ -52,7 +52,7 @@ class User {
 
   @Field()
   @prop()
-  resetPasswordExpiresAt?: number
+  resetPasswordExpiresAt?: Date
 
   @Field({ description: 'Only used to score the lead, not a relation' })
   @prop()
@@ -66,10 +66,10 @@ class User {
   @prop({ ref: Creator })
   ambassador?: Ref<Creator>
 
-  @Field()
+  @Field(() => Date)
   createdAt: Readonly<Date>
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Readonly<Date>
 }
 

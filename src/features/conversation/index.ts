@@ -12,12 +12,11 @@ async function createConversation(
   creatorId: mongoose.Types.ObjectId,
   brandId: mongoose.Types.ObjectId
 ): Promise<DocumentType<Conversation>> {
-  const conversationDraft: Conversation = {
+  const conversationDraft: Partial<Conversation> = {
     creator: creatorId,
     brand: brandId,
     messages: [],
     messagesCount: 0,
-    creationDate: Date.now(),
     isArchived: false,
   }
   const conversation = new ConversationModel(conversationDraft)
@@ -54,14 +53,13 @@ async function sendMessage({
   }
 
   // Prepare and save message
-  const messageDraft: Message = {
+  const messageDraft: Partial<Message> = {
     conversation: conversationId,
     text,
     // Find the author
     creatorAuthor: creatorAuthorId,
     brandAuthor: brandAuthorId,
     isAdminAuthor: isAdminAuthor || false,
-    sentAt: Date.now(),
   }
   const message = new MessageModel(messageDraft)
   await message.save()
@@ -178,7 +176,6 @@ async function getOrCreateConversationByParticipants(
   const newConversation = new ConversationModel({
     creator: creatorId,
     brand: brandId,
-    creationDate: Date.now(),
   } as Conversation)
   await newConversation.save()
   return newConversation

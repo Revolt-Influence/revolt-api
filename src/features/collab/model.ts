@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { registerEnumType, ObjectType, Field } from 'type-graphql'
+import { registerEnumType, ObjectType, Field, ID } from 'type-graphql'
 import { Campaign } from '../campaign/model'
 import { CreatorModel, Creator } from '../creator/model'
 import { Review, ReviewFormat } from '../review/model'
@@ -29,6 +29,9 @@ registerEnumType(CollabStatus, {
 })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Collab {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
   @Field(() => CollabStatus, { description: 'Advancement of the collab' })
   @prop({ enum: CollabStatus, type: String })
   status: CollabStatus
@@ -51,10 +54,10 @@ class Collab {
   @prop({ ref: Conversation })
   conversation: Ref<Conversation>
 
-  @Field()
+  @Field(() => Date)
   createdAt: Readonly<Date>
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Readonly<Date>
 }
 

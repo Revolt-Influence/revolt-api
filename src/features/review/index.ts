@@ -28,30 +28,27 @@ async function getReviewById(reviewId: mongoose.Types.ObjectId): Promise<Documen
 async function getReviewFromYoutubeVideoUrl(
   videoUrl: string,
   creatorId: mongoose.Types.ObjectId
-): Promise<Review> {
+): Promise<Partial<Review>> {
   const videoId = getVideoIdFromYoutubeUrl(videoUrl)
   const video = await getYoutubeVideoData(videoId)
   const now = Date.now()
   return {
-    format: ReviewFormat.youtubeVideo,
-    comments: video.commentCount,
-    likes: video.likeCount,
-    views: video.viewCount,
+    format: ReviewFormat.YOUTUBE_VIDEO,
+    commentCount: video.commentCount,
+    likeCount: video.likeCount,
+    viewCount: video.viewCount,
     creator: creatorId,
-    lastUpdateDate: now,
-    submitDate: now,
     link: videoUrl,
-    medias: [video.thumbnail],
-    postDate: video.publishedDate,
+    thumbnail: video.thumbnail,
   }
 }
 
 async function enrichBaseReview(baseReview: BaseReview): Promise<Review> {
   const { link, format, creatorId, instagramPostData } = baseReview
   switch (format) {
-    case ReviewFormat.youtubeVideo:
+    case ReviewFormat.YOUTUBE_VIDEO:
       const video = await getReviewFromYoutubeVideoUrl(link, creatorId)
-      return video
+      return video as Review
     default:
       return null
   }
@@ -75,8 +72,8 @@ async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<voi
     template: 'newReviews',
     locals: {
       username: creator.name,
-      brandName: (campaign.settings.brand as Brand).name,
-      productName: campaign.settings.gift.name,
+      brandName: (campaign.brand as Brand).name,
+      productName: campaign.product.name,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=reviews`,
     },
     message: {
@@ -111,7 +108,7 @@ async function submitCreatorReviews(
 
   // Add reviews to collab
   collab.reviews = newReviewsIds
-  collab.status = CollabStatus.done
+  collab.status = CollabStatus.DONE
   await collab.save()
 
   const populatedCollab = (await CollabModel.populate(collab, {

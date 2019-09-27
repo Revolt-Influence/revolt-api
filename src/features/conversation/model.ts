@@ -1,25 +1,33 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, modelOptions, getModelForClass, arrayProp } from '@hasezoey/typegoose'
+import { Field, ID, ObjectType } from 'type-graphql'
 import { UserModel } from '../user/model'
 import { Creator } from '../creator/model'
 import { Brand } from '../brand/model'
 
+@ObjectType({
+  description: 'Conversation between a brand, a creator and Revolt. Linked to one ore more collabs',
+})
 @modelOptions({
-  schemaOptions: { toJSON: { virtuals: true }, toObject: { virtuals: true } },
+  schemaOptions: { toJSON: { virtuals: true }, toObject: { virtuals: true }, timestamps: true },
 })
 class Conversation {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
+  @Field(() => Brand, { description: 'Brand that talks to a creator' })
   @prop({ ref: Brand })
   brand: Ref<Brand>
 
+  @Field(() => Creator, { description: 'Creator that talks to a brand' })
   @prop({ ref: Creator })
   creator: Ref<Creator>
 
-  @prop({ default: Date.now })
-  creationDate: number
-
+  @Field({ description: 'Whether the conversation should appear in the messages page' })
   @prop({ default: true })
   isArchived: boolean
 
+  @Field(() => [Message], { description: 'Conversation messages from old to new' })
   @arrayProp({
     itemsRef: 'Message',
     ref: 'Message', // Shouldn't be here
@@ -31,6 +39,7 @@ class Conversation {
   })
   messages: Ref<Message>[]
 
+  @Field({ description: 'How many messages are in the conversation' })
   @prop({
     ref: 'Message',
     localField: '_id',
@@ -38,28 +47,46 @@ class Conversation {
     count: true,
   })
   messagesCount: number
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
 }
 
 const ConversationModel = getModelForClass(Conversation)
 
+@ObjectType({ description: 'A message is part of a conversation' })
 class Message {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
+  @Field({ description: 'The content of the message' })
   @prop()
   text: string
 
+  @Field(() => Brand, { description: 'Potential brand author', nullable: true })
   @prop({ ref: Brand })
-  brandAuthor: Ref<Brand> // id
+  brandAuthor?: Ref<Brand> // id
 
+  @Field(() => Creator, { description: 'Potential creator author', nullable: true })
   @prop({ ref: Creator })
-  creatorAuthor: Ref<Creator> // id
+  creatorAuthor?: Ref<Creator> // id
 
+  @Field({ description: 'Whether the message was sent by an admin or is a notification' })
   @prop()
   isAdminAuthor: boolean
 
-  @prop({ default: Date.now })
-  sentAt: number
-
+  @Field(() => Conversation, { description: 'The conversation the message is a part of' })
   @prop({ ref: Conversation })
   conversation: Ref<Conversation> // id
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
 }
 
 const MessageModel = getModelForClass(Message)

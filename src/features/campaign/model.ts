@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { Field, registerEnumType, ObjectType } from 'type-graphql'
+import { Field, registerEnumType, ObjectType, ID } from 'type-graphql'
 import { Gender, AgeGroup } from '../creator/model'
 import { BrandModel, Brand } from '../brand/model'
 import { ReviewFormat } from '../review/model'
@@ -36,17 +36,20 @@ class TargetAudience {
   gender: Gender
 
   @Field(() => [String], { description: 'ISO 3166-1-alpha-2 codes of countries' })
-  @arrayProp({ type: String, default: [] })
+  @arrayProp({ items: String, type: String, default: [] })
   countries: string[]
 
   @Field(() => AgeGroup, { description: 'Groups of age' })
-  @arrayProp({ enum: AgeGroup, type: String, default: [] })
+  @arrayProp({ enum: AgeGroup, items: String, type: String, default: [] })
   ageGroups: AgeGroup[]
 }
 
 @ObjectType({ description: 'A campaign is made by brands to find collabs to promote a product' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Campaign {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
   @Field({ description: 'The campaign name that is promoted to the creators' })
   @prop({ default: 'My new campaign' })
   name: string
@@ -71,7 +74,7 @@ class Campaign {
   @prop({ _id: false })
   targetAudience: TargetAudience
 
-  @Field({ description: 'Rules that creators must respect to receive the gift' })
+  @Field(() => [String], { description: 'Rules that creators must respect to receive the gift' })
   @arrayProp({ items: String })
   rules: string[]
 
@@ -83,10 +86,10 @@ class Campaign {
   @prop({ default: false })
   isReviewed: boolean
 
-  @Field()
+  @Field(() => Date)
   createdAt: Readonly<Date>
 
-  @Field()
+  @Field(() => Date)
   updatedAt: Readonly<Date>
 }
 
@@ -96,4 +99,4 @@ const CampaignModel = getModelForClass(Campaign)
 const mandatoryRules: string[] = ['Identifier @revolt.club sur les publications Instagram']
 const defaultRules = ['Les posts devront être gardés au moins 90 jours sur la page']
 
-export { Campaign, CampaignModel, CampaignGift }
+export { Campaign, CampaignModel, CampaignProduct }

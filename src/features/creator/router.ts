@@ -1,11 +1,9 @@
 import * as Router from 'koa-router'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
-import { Creator, CreatorModel, PostalAddress, CreatorStatus } from './model'
+import { Creator, CreatorModel, CreatorStatus } from './model'
 import {
   signupCreator,
-  claimCreatorInstagramAccount,
   getFullCreatorById,
-  saveCreatorPostalAddress,
   saveCreatorProfile,
   updateCreatorContactInfo,
   getCreatorsPage,
@@ -56,13 +54,6 @@ router.post('/profile', async ctx => {
   const { picture, name } = ctx.request.body as { picture: string; name: string }
   const creatorId = ctx.state.user._id
   const updatedCreator = await saveCreatorProfile(creatorId, { picture, name })
-  ctx.body = { creator: updatedCreator }
-})
-
-router.post('/postalAddress', async ctx => {
-  const { postalAddress } = ctx.request.body as { postalAddress: PostalAddress }
-  const creator = ctx.state.user as DocumentType<Creator>
-  const updatedCreator = await saveCreatorPostalAddress(creator._id, postalAddress)
   ctx.body = { creator: updatedCreator }
 })
 

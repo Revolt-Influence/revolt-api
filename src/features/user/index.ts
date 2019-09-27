@@ -49,11 +49,11 @@ interface IUpdateUserInfoPayload {
   phone: string
 }
 
-async function updateUserInfo(
+async function updateUserContactInfo(
   currentEmail: string,
-  info: IUpdateUserInfoPayload
+  newContactInfo: IUpdateUserInfoPayload
 ): Promise<DocumentType<User>> {
-  const { email, phone } = info
+  const { email, phone } = newContactInfo
 
   // Prevent spammy emails
   if (spammyDomains.some(domain => email.includes(domain))) {
@@ -72,18 +72,9 @@ async function updateUserInfo(
   user.phone = phone
   await user.save()
 
-  // Update user campaigns
-  if (email !== currentEmail) {
-    const campaigns = await CampaignModel.find({ owner: currentEmail })
-    const updateCampaignsPromises = campaigns.map(async _campaign => {
-      _campaign.owner = email
-      await _campaign.save()
-    })
-    await Promise.all(updateCampaignsPromises)
-  }
   return user
 }
 
 export * from './billing'
 export * from './password'
-export { createUser, updateUserInfo, IUpdateUserInfoPayload }
+export { createUser, updateUserContactInfo, IUpdateUserInfoPayload }

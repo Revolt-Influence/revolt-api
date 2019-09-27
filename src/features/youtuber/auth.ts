@@ -158,7 +158,7 @@ async function getChannelVideos(uploadsPlaylistId: string): Promise<YoutubeVideo
     viewCount: null,
     commentCount: null,
     likeCount: null,
-    publishedDate: null,
+    publishedAt: null,
   }))
   return rawVideos
 }
@@ -178,21 +178,17 @@ async function createYoutuberFromReport(
     url,
     uploadsPlaylistId,
   } = report
-  const youtuberDraft: Youtuber = {
+  const youtuberDraft: Partial<Youtuber> = {
     name,
     channelId,
     viewCount,
     videoCount,
     subscriberCount,
     picture: report.thumbnail,
-    country,
-    language,
     url,
     videos,
     uploadsPlaylistId,
     audience: getAudienceFromReport(report),
-    lastScrapingDate: Date.now(),
-    creationDate: Date.now(),
   }
 
   // Use upsert so we can overwrite an existing youtuber

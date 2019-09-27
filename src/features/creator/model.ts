@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, getModelForClass } from '@hasezoey/typegoose'
-import { registerEnumType, ObjectType, Field } from 'type-graphql'
+import { registerEnumType, ObjectType, Field, ID } from 'type-graphql'
 import { YoutuberModel, Youtuber } from '../youtuber/model'
 
 enum CreatorStatus {
@@ -39,6 +39,9 @@ registerEnumType(AgeGroup, {
 
 @ObjectType({ description: 'Someone who creates content and has a community' })
 class Creator {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
   @Field({ description: 'The email is used for login and notifications' })
   @prop({ lowercase: true, trim: true, unique: true })
   email: string
@@ -90,7 +93,7 @@ class Creator {
   resetPasswordToken?: string
 
   @prop()
-  resetPasswordExpiresAt?: number
+  resetPasswordExpiresAt?: Date
 
   @Field(() => CreatorStatus, { description: 'Whether the influencer was validated by an admin' })
   @prop({ enum: CreatorStatus, type: String, default: CreatorStatus.UNVERIFIED })
