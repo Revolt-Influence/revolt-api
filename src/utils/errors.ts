@@ -45,6 +45,8 @@ const errorNames = {
   notEnoughFollowers: 'Not enough followers',
   // Conversation related
   conversationNotFound: 'Conversation not found',
+  // Brand related
+  brandNotFound: 'Brand not found',
 }
 
 class CustomError extends Error {
