@@ -41,8 +41,8 @@ async function userLogin(email: string, plainPassword: string): Promise<Document
     // User does not exist
     throw new CustomError(422, errorNames.loginFail)
   }
-  const { passwordHash } = user
-  const isValidPassword = await bcrypt.compare(plainPassword, passwordHash)
+  const { password } = user
+  const isValidPassword = await bcrypt.compare(plainPassword, password)
   if (!isValidPassword) {
     // Invalid passport
     throw new CustomError(422, errorNames.loginFail)
@@ -56,8 +56,8 @@ async function creatorLogin(email: string, plainPassword: string): Promise<Docum
     // User does not exist
     throw new CustomError(422, errorNames.loginFail)
   }
-  const { passwordHash } = creator
-  const isValidPassword = await bcrypt.compare(plainPassword, passwordHash)
+  const { password } = creator
+  const isValidPassword = await bcrypt.compare(plainPassword, password)
   if (!isValidPassword) {
     // Invalid passport
     throw new CustomError(422, errorNames.loginFail)
@@ -71,14 +71,14 @@ interface IKey {
 }
 
 passport.serializeUser((session: Session, done) => {
-  const getId = (): mongoose.Types.ObjectId => {
+  const getId = (): mongoose.Types.ObjectId | undefined => {
     switch (session.sessionType) {
       case SessionType.BRAND:
-        return session.user._id
+        return session.user && session.user._id
       case SessionType.CREATOR:
-        return session.creator._id
+        return session.creator && session.creator._id
       default:
-        return null
+        return undefined
     }
   }
   const idToKeep = getId()

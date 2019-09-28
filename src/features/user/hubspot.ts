@@ -6,7 +6,7 @@ import { User, UserModel } from './model'
 dotenv.config()
 
 const hubspot = new Hubspot({
-  apiKey: process.env.HUBSPOT_API_KEY,
+  apiKey: process.env.HUBSPOT_API_KEY as string,
 })
 
 interface IHubspotProperty {

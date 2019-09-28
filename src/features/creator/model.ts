@@ -73,10 +73,10 @@ class Creator {
   birthYear: number // 2002
 
   @prop()
-  passwordHash: string
+  password: string
 
-  @Field(() => Youtuber, { description: 'Youtube account linked to the creator' })
-  @prop({ ref: Youtuber, unique: true })
+  @Field(() => Youtuber, { description: 'Youtube account linked to the creator', nullable: true })
+  @prop({ ref: Youtuber, sparse: true })
   youtube: Ref<Youtuber>
 
   @prop()
@@ -85,7 +85,10 @@ class Creator {
   @prop()
   googleRefreshToken: string
 
-  @Field(() => Creator, { description: 'The creator that signed up the influencer' })
+  @Field(() => Creator, {
+    description: 'The creator that signed up the influencer',
+    nullable: true,
+  })
   @prop({ ref: 'Creator' })
   ambassador?: Ref<Creator> // _id
 

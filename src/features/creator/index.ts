@@ -41,7 +41,7 @@ async function getCreatorsPage(
 
   const creatorsPromise = CreatorModel.find(query)
     .select(
-      '-passwordHash -postalAddress -googleAccessToken -googleRefreshToken -resetPasswordToken -resetPasswordExpires'
+      '-password -postalAddress -googleAccessToken -googleRefreshToken -resetPasswordToken -resetPasswordExpires'
     )
     .skip((safePage - 1) * CREATORS_PER_PAGE)
     .limit(CREATORS_PER_PAGE)
@@ -73,7 +73,7 @@ async function getFullCreatorById(
   // Get creator from Mongo
   const creator = await CreatorModel.findById(creatorId)
     .select(
-      '-passwordHash -postalAddress -googleAccessToken -googleRefreshToken -resetPasswordToken -resetPasswordExpires'
+      '-password -postalAddress -googleAccessToken -googleRefreshToken -resetPasswordToken -resetPasswordExpires'
     )
     .populate([
       {
@@ -121,7 +121,7 @@ async function signupCreator(
   } as Creator)
   // Hash password
   const hash = await bcrypt.hash(plainPassword, SALT_ROUNDS)
-  unverifiedCreator.passwordHash = hash
+  unverifiedCreator.password = hash
   // Save unverified profile to mongoDB
   await unverifiedCreator.save()
   return unverifiedCreator

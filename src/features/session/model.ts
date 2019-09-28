@@ -1,5 +1,6 @@
-import { registerEnumType, Field, ObjectType } from 'type-graphql'
+import { registerEnumType, Field, ObjectType, ID } from 'type-graphql'
 import { DefaultState, DefaultContext } from 'koa'
+import * as uuid from 'uuid/v4'
 
 import { User } from '../user/model'
 import { Creator } from '../creator/model'
@@ -26,6 +27,11 @@ class Session {
 
   @Field({ description: 'The creator that _may_ be logged in', nullable: true })
   creator?: Creator
+
+  @Field(() => ID, {
+    description: 'UUID used to uniquely identify the session from the GQL client',
+  })
+  sessionId: string
 }
 
 interface StateSession extends DefaultState {
@@ -40,8 +46,11 @@ interface MyContext extends DefaultContext {
   state: StateSession
 }
 
-const defaultSession: Session = {
-  isLoggedIn: false,
+function createDefaultSession(): Session {
+  return {
+    isLoggedIn: false,
+    sessionId: uuid(),
+  }
 }
 
-export { Session, MyContext, SessionType, defaultSession }
+export { Session, MyContext, SessionType, createDefaultSession }

@@ -12,9 +12,7 @@ import * as http from 'http'
 import { ApolloServer } from 'apollo-server-koa'
 import 'reflect-metadata'
 import { buildSchema } from 'type-graphql'
-import sessionRouter from './features/session/router'
 // import campaignRouter from './features/campaign/router'
-import userRouter from './features/user/router'
 import creatorRouter from './features/creator/router'
 import collabRouter from './features/collab/router'
 import youtubeRouter from './features/youtuber/router'
@@ -25,6 +23,7 @@ import { socketEvents } from './utils/sockets'
 import { UserResolver } from './features/user/resolver'
 import CampaignResolver from './features/campaign/resolver'
 import { MyContext, Session } from './features/session/model'
+import { customAuthChecker } from './features/middleware/auth'
 
 async function main(): Promise<void> {
   // Create instances and configs
@@ -52,6 +51,7 @@ async function main(): Promise<void> {
   // Setup GraphQL schema
   const schema = await buildSchema({
     resolvers: [UserResolver, CampaignResolver],
+    authChecker: customAuthChecker,
   })
 
   // Create Apollo Server instance

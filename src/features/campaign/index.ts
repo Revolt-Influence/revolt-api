@@ -11,12 +11,12 @@ import { BrandModel, Brand } from '../brand/model'
 
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
 
-async function createCampaign(owner: string): Promise<DocumentType<Campaign>> {
+async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentType<Campaign>> {
   // Prepare campaign
   const campaign = new CampaignModel({
     owner,
     name: 'Ma nouvelle campagne',
-  })
+  } as Partial<Campaign>)
   // Save campaign to database
   await campaign.save()
   return campaign
@@ -98,8 +98,8 @@ async function getUserCampaignsAndCollabs(
 }
 
 async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<void> {
-  const brandUser = await UserModel.findOne({ email: campaign.owner }).populate('ambassador')
-  const ambassador = brandUser.ambassador as Creator
+  const brandUser = await UserModel.findById(campaign.owner).populate('ambassador')
+  const ambassador = brandUser && (brandUser.ambassador as Creator)
   await emailService.send({
     template: 'newCampaign',
     locals: {
@@ -108,7 +108,7 @@ async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<v
       brandName: (campaign.brand as DocumentType<Brand>).name,
       brandEmail: campaign.owner,
       ambassador: ambassador && ambassador.email,
-      isPremium: brandUser.plan !== 'free',
+      isPremium: brandUser && brandUser.plan !== 'free',
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -160,7 +160,7 @@ async function reviewCampaign(
   return campaign
 }
 
-async function saveCampaignSettings(
+async function updateCampaign(
   campaignId: mongoose.Types.ObjectId,
   updatedCampaign: Campaign
 ): Promise<DocumentType<Campaign>> {
@@ -191,10 +191,10 @@ async function saveCampaignSettings(
     campaign.brand = newBrand._id
   } else {
     // Brand already exists, update it
-    Object.entries(updatedBrand).forEach(_entry => {
-      const [key, value] = _entry
-      existingBrand[key] = value
-    })
+    const fullUpdatedBrand = updatedBrand as Brand
+    existingBrand.name = fullUpdatedBrand.name
+    existingBrand.logo = fullUpdatedBrand.logo
+    existingBrand.website = fullUpdatedBrand.website
     await existingBrand.save()
     campaign.brand = existingBrand._id
   }
@@ -220,5 +220,5 @@ export {
   deleteCampaign,
   getAdminCampaigns,
   reviewCampaign,
-  saveCampaignSettings,
+  updateCampaign,
 }

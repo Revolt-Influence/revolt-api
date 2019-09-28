@@ -1,16 +1,16 @@
 import * as Stripe from 'stripe'
 import * as dotenv from 'dotenv'
 import { DocumentType } from '@hasezoey/typegoose'
-import { User, UserModel } from './model'
+import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'
 
 dotenv.config()
 
 // Setup Stripe stuff
-const upperCaseEnv = process.env.NODE_ENV.toUpperCase()
-const secretKey = process.env[`STRIPE_SECRET_KEY_${upperCaseEnv}`]
-const stripe = new Stripe(secretKey)
+const upperCaseEnv = process.env.NODE_ENV && process.env.NODE_ENV.toUpperCase()
+const secretKey = process.env.STRIPE_SECRET_KEY
+const stripe = new Stripe(secretKey as string)
 const premiumPlanId = 'plan_FeOlduEF2o9fdt'
 
 async function createCustomer(token: string, email: string, fullName: string): Promise<string> {
@@ -27,7 +27,8 @@ async function createCustomer(token: string, email: string, fullName: string): P
     {
       $set: {
         stripeCustomerId: customer.id,
-        creditCardLast4: (customer.sources.data[0] as any).last4,
+        creditCardLast4: (customer.sources && (customer.sources.data[0] as any)).last4,
+        // creditCardLast4: (customer.sources.data[0] as any).last4,
       },
     }
   )
@@ -65,14 +66,7 @@ async function switchToPremium(
     const customer = await stripe.customers.retrieve(currentUser.stripeCustomerId)
     console.log('existing customer', customer.id)
     // Restore last 4 digits in database
-    await UserModel.findOneAndUpdate(
-      { email },
-      {
-        $set: {
-          creditCardLast4: (customer.sources.data[0] as any).last4,
-        },
-      }
-    )
+    currentUser.creditCardLast4 = (customer.sources && (customer.sources.data[0] as any)).last4
   }
 
   // Subscribe customer to Premium plan
@@ -84,31 +78,20 @@ async function switchToPremium(
 
   // Save changes in database
   const now: number = Date.now()
-  const updatedUser = await UserModel.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        firstName,
-        lastName,
-        plan: 'premium',
-        switchToPremiumDate: now,
-        lastCountResetDate: now,
-        searchesCount: 0,
-        profilesCount: 0,
-      },
-    },
-    { new: true }
-  )
+  currentUser.plan = Plan.PREMIUM
+  currentUser.switchedToPremiumAt = new Date()
+  await currentUser.save()
+  // TODO: save firstName and lastName
 
   if (upperCaseEnv === 'PRODUCTION') {
     // Save changes in Hubspot in the background
-    updateHubspotContact(updatedUser)
+    updateHubspotContact(currentUser)
   }
 
-  return updatedUser
+  return currentUser
 }
 
-async function cancelPremium(email: string): Promise<DocumentType<User>> {
+async function cancelPremium(email: string): Promise<DocumentType<User> | null> {
   // Retrieve current user
   const currentUser = await UserModel.findOne({ email })
   if (currentUser == null) {
@@ -142,7 +125,7 @@ async function cancelPremium(email: string): Promise<DocumentType<User>> {
     { new: true }
   )
 
-  if (upperCaseEnv === 'PRODUCTION') {
+  if (upperCaseEnv === 'PRODUCTION' && updatedUser) {
     // Save changes in Hubspot in the background
     updateHubspotContact(updatedUser)
   }
@@ -167,15 +150,11 @@ async function updateCreditCard(email: string, token: string): Promise<DocumentT
   const updatedCustomer = await stripe.customers.update(user.stripeCustomerId, { source: token })
 
   // Save new card last 4 digits in database
-  return UserModel.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        creditCardLast4: (updatedCustomer.sources.data[0] as any).last4,
-      },
-    },
-    { new: true }
-  )
+  if (updatedCustomer && updatedCustomer.sources) {
+    user.creditCardLast4 = (updatedCustomer.sources.data[0] as any).last4
+    await user.save()
+  }
+  return user
 }
 
 export { createCustomer, switchToPremium, cancelPremium, updateCreditCard }

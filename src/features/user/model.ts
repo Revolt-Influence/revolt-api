@@ -25,32 +25,30 @@ class User {
 
   @Field({ description: 'When the user switched to premium', nullable: true })
   @prop()
-  switchedToPremiumAt: Date
+  switchedToPremiumAt?: Date
 
   @Field({ description: 'Phone number is used for demo, customer support and conflicts' })
   @prop()
   phone: string
 
   @prop()
-  passwordHash: string
+  password: string
 
   @Field(() => Plan, { description: 'Whether the user has paid' })
   @prop({ enum: Plan })
   plan: Plan
 
-  @Field({ description: 'Got from Stripe, used to tell what card the user used' })
+  @Field({ description: 'Got from Stripe, used to tell what card the user used', nullable: true })
   @prop()
-  creditCardLast4: string
+  creditCardLast4?: string
 
   @Field({ description: 'Used to retrieve a Stripe customer when he gets back to Premium' })
   @prop()
   stripeCustomerId: string
 
-  @Field()
   @prop()
   resetPasswordToken?: string
 
-  @Field()
   @prop()
   resetPasswordExpiresAt?: Date
 
@@ -62,7 +60,7 @@ class User {
   @prop({ default: false })
   isAdmin: boolean
 
-  @Field(() => Creator, { description: 'The creator who signed him up' })
+  @Field(() => Creator, { description: 'The creator who signed him up', nullable: true })
   @prop({ ref: Creator })
   ambassador?: Ref<Creator>
 
