@@ -60,32 +60,32 @@ async function getCampaignsFromQuery(
 }
 
 async function getUserCampaigns(
-  email: string,
-  page: number = 0
+  userId: mongoose.Types.ObjectId,
+  page: number = 1
 ): Promise<{ campaigns: DocumentType<Campaign>[]; totalPages: number }> {
-  const query = { owner: email }
+  const query = { owner: userId }
   return getCampaignsFromQuery(query, page)
 }
 
-async function getAdminCampaigns(email: string, page: number = 0) {
+async function getAdminCampaigns(userId: mongoose.Types.ObjectId, page: number = 1) {
   const query = {
-    $or: [{ owner: email }, { isArchived: false }, { isReviewed: true }] as Partial<Campaign>[],
+    $or: [{ owner: userId }, { isArchived: false }, { isReviewed: true }] as Partial<Campaign>[],
   }
   return getCampaignsFromQuery(query, page)
 }
 
 async function getUserCampaignsAndCollabs(
-  email: string,
-  page: number = 0
+  userId: mongoose.Types.ObjectId,
+  page: number = 1
 ): Promise<{
   campaigns: DocumentType<Campaign>[]
   collabs: DocumentType<Collab>[]
   totalPages: number
 }> {
-  const { isAdmin } = await UserModel.findOne({ email })
+  const { isAdmin } = await UserModel.findById(userId)
   const { campaigns, totalPages } = await (isAdmin
-    ? getAdminCampaigns(email)
-    : getUserCampaigns(email))
+    ? getAdminCampaigns(userId)
+    : getUserCampaigns(userId))
   const collabsPromises = campaigns.map(async _campaign => getCampaignCollabs(_campaign._id))
   const collabs = await Promise.all(collabsPromises)
   // Collabs is an array of arrays. We want a flat array

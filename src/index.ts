@@ -13,7 +13,7 @@ import { ApolloServer } from 'apollo-server-koa'
 import 'reflect-metadata'
 import { buildSchema } from 'type-graphql'
 import sessionRouter from './features/session/router'
-import campaignRouter from './features/campaign/router'
+// import campaignRouter from './features/campaign/router'
 import userRouter from './features/user/router'
 import creatorRouter from './features/creator/router'
 import collabRouter from './features/collab/router'
@@ -23,10 +23,12 @@ import { passport } from './features/session'
 import { handleGlobalErrors } from './utils/errors'
 import { socketEvents } from './utils/sockets'
 import { UserResolver } from './features/user/resolver'
+import CampaignResolver from './features/campaign/resolver'
+import { MyContext, Session } from './features/session/model'
 
 async function main(): Promise<void> {
   // Create instances and configs
-  const app = new Koa()
+  const app = new Koa<Session, MyContext>()
   const server = http.createServer(app.callback())
   const io = socketIo(server)
   app.context.io = io // Attach socket.io to context for easy access
@@ -49,11 +51,14 @@ async function main(): Promise<void> {
 
   // Setup GraphQL schema
   const schema = await buildSchema({
-    resolvers: [UserResolver],
+    resolvers: [UserResolver, CampaignResolver],
   })
 
   // Create Apollo Server instance
-  const apolloServer = new ApolloServer({ schema })
+  const apolloServer = new ApolloServer({
+    schema,
+    context: ({ ctx }: { ctx: Koa.ParameterizedContext<Session, MyContext> }) => ctx,
+  })
   // Start Koa app
   // Link server and app
   apolloServer.applyMiddleware({ app })
@@ -63,7 +68,7 @@ async function main(): Promise<void> {
   router.use('/session', sessionRouter.routes())
   router.use('/creators', creatorRouter.routes())
   router.use('/user', userRouter.routes())
-  router.use('/campaigns', campaignRouter.routes())
+  // router.use('/campaigns', campaignRouter.routes())
   router.use('/collab', collabRouter.routes())
   router.use('/youtuber', youtubeRouter.routes())
   router.use('/conversations', conversationRouter.routes())

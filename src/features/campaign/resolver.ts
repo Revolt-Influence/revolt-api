@@ -1,6 +1,5 @@
-import * as Router from 'koa-router'
-import { Context } from 'koa'
 import { mongoose } from '@hasezoey/typegoose'
+import { Resolver, Query, Arg, Ctx, Mutation } from 'type-graphql'
 import { errorNames, CustomError } from '../../utils/errors'
 import {
   createCampaign,
@@ -11,37 +10,51 @@ import {
   reviewCampaign,
   saveCampaignSettings,
 } from '.'
-import { Campaign } from './model'
+import { Campaign, CampaignModel } from './model'
 import { applyToExperience, getExperiencesPage } from '../creator/experiences'
 import { Creator, CreatorStatus } from '../creator/model'
+import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 
-const router = new Router()
+const PaginatedCampaignResponse = PaginatedResponse(Campaign)
+type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
 
-function checkIfPremium(ctx: Context) {
-  // Throw an error if not premium or admin
-  if (ctx.isUnauthenticated() || ctx.state.user.plan === 'free') {
-    ctx.throw(401, errorNames.unauthorized)
-  }
-}
-
-router.get('/', async ctx => {
-  const page = ctx.query.page || 0
-  if (ctx.state.user.sessionType === 'brand') {
-    // Show brand campaigns
-    const userCampaigns = await getUserCampaigns(ctx.state.user.email)
-    ctx.body = { campaigns: userCampaigns, currentPage: page }
-  } else {
+@Resolver()
+class CampaignResolver {
+  @Query(() => PaginatedCampaignResponse, {
+    description:
+      'Get page of campaigns or experiences depending on whether the session is a brand or a user',
+  })
+  async campaigns(
+    @Ctx() ctx: any,
+    @Arg('page', { defaultValue: 1, nullable: true }) page?: number
+  ): Promise<PaginatedCampaignResponse> {
+    if (ctx.state.user.sessionType === 'brand') {
+      // Show brand campaigns
+      const paginatedCampaigns = await getUserCampaigns(ctx.state.user.email)
+      return {
+        items: paginatedCampaigns.campaigns,
+        currentPage: page,
+        totalPages: paginatedCampaigns.totalPages,
+      }
+    }
     // Show creator experiences
-    const { experiences } = await getExperiencesPage(ctx.state.user._id, page)
-    ctx.body = { campaigns: experiences, currentPage: page }
+    const paginatedExperiences = await getExperiencesPage(ctx.state.user._id, page)
+    return {
+      items: paginatedExperiences.experiences,
+      currentPage: page,
+      totalPages: paginatedExperiences.totalPages,
+    }
   }
-})
 
-router.get('/:campaignId', async ctx => {
-  const { campaignId } = ctx.params as { campaignId: string }
-  const campaign = await getCampaignById(mongoose.Types.ObjectId(campaignId))
-  ctx.body = { campaign }
-})
+  @Query(() => Campaign, { description: 'Get campaign by ID' })
+  async campaign(@Arg('id') id: string): Promise<Campaign> {
+    const campaign = CampaignModel.findById(id)
+    return campaign
+  }
+
+  @Mutation({ description: 'Create blank campaign' })
+  async createCampaign()
+}
 
 router.post('/', async ctx => {
   const { email } = ctx.state.user
@@ -104,4 +117,4 @@ router.delete('/:campaignId', async ctx => {
   ctx.body = { campaignId }
 })
 
-export default router
+export default CampaignResolver
