@@ -6,7 +6,7 @@ import { CreatorModel, Creator } from '../creator/model'
 import { Review, ReviewFormat } from '../review/model'
 import { ConversationModel, Conversation } from '../conversation/model'
 
-enum DashboardAction {
+enum ReviewCollabDecision {
   ACCEPT = 'accept',
   REFUSE = 'refuse',
   MARK_AS_SENT = 'markAsSent',
@@ -63,4 +63,4 @@ class Collab {
 
 const CollabModel = getModelForClass(Collab)
 
-export { DashboardAction, CollabStatus, Collab, CollabModel }
+export { ReviewCollabDecision, CollabStatus, Collab, CollabModel }

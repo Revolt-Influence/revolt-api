@@ -14,7 +14,6 @@ interface BaseReview {
   link: string
   format: ReviewFormat
   creatorId: mongoose.Types.ObjectId
-  instagramPostData: any
 }
 
 async function getReviewById(reviewId: mongoose.Types.ObjectId): Promise<DocumentType<Review>> {
@@ -44,7 +43,7 @@ async function getReviewFromYoutubeVideoUrl(
 }
 
 async function enrichBaseReview(baseReview: BaseReview): Promise<Review> {
-  const { link, format, creatorId, instagramPostData } = baseReview
+  const { link, format, creatorId } = baseReview
   switch (format) {
     case ReviewFormat.YOUTUBE_VIDEO:
       const video = await getReviewFromYoutubeVideoUrl(link, creatorId)
@@ -54,10 +53,7 @@ async function enrichBaseReview(baseReview: BaseReview): Promise<Review> {
   }
 }
 
-async function enrichAllReviews(
-  baseReviews: BaseReview[],
-  instagramPostData?: any
-): Promise<Review[]> {
+async function enrichAllReviews(baseReviews: BaseReview[]): Promise<Review[]> {
   // Enrich non story reviews
   const enrichReviewPromises = baseReviews.map(async _baseReview => enrichBaseReview(_baseReview))
   const reviews = await Promise.all(enrichReviewPromises)

@@ -99,4 +99,4 @@ const CampaignModel = getModelForClass(Campaign)
 const mandatoryRules: string[] = ['Identifier @revolt.club sur les publications Instagram']
 const defaultRules = ['Les posts devront être gardés au moins 90 jours sur la page']
 
-export { Campaign, CampaignModel, CampaignProduct }
+export { Campaign, CampaignModel, CampaignProduct, TargetAudience }

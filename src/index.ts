@@ -12,21 +12,21 @@ import * as http from 'http'
 import { ApolloServer } from 'apollo-server-koa'
 import 'reflect-metadata'
 import { buildSchema } from 'type-graphql'
-// import campaignRouter from './features/campaign/router'
-import creatorRouter from './features/creator/router'
-import collabRouter from './features/collab/router'
-import youtubeRouter from './features/youtuber/router'
-import conversationRouter from './features/conversation/router'
 import { passport } from './features/session'
 import { handleGlobalErrors } from './utils/errors'
 import { socketEvents } from './utils/sockets'
 import { UserResolver } from './features/user/resolver'
-import CampaignResolver from './features/campaign/resolver'
+import { CreatorResolver } from './features/creator/resolver'
+import { CampaignResolver } from './features/campaign/resolver'
+import { ConversationResolver } from './features/conversation/resolver'
+import { CollabResolver } from './features/collab/resolver'
+import { SessionResolver } from './features/session/resolver'
+import { YoutuberResolver } from './features/youtuber/resolver'
 import { MyContext, Session } from './features/session/model'
-import { customAuthChecker } from './features/middleware/auth'
+import { customAuthChecker } from './middleware/auth'
 
 async function main(): Promise<void> {
-  // Create instances and configs
+  // Create instances and configs./middleware/auth
   const app = new Koa<Session, MyContext>()
   const server = http.createServer(app.callback())
   const io = socketIo(server)
@@ -50,7 +50,15 @@ async function main(): Promise<void> {
 
   // Setup GraphQL schema
   const schema = await buildSchema({
-    resolvers: [UserResolver, CampaignResolver],
+    resolvers: [
+      CreatorResolver,
+      CampaignResolver,
+      ConversationResolver,
+      CollabResolver,
+      UserResolver,
+      SessionResolver,
+      YoutuberResolver,
+    ],
     authChecker: customAuthChecker,
   })
 
@@ -59,19 +67,11 @@ async function main(): Promise<void> {
     schema,
     context: ({ ctx }: { ctx: Koa.ParameterizedContext<Session, MyContext> }) => ctx,
   })
-  // Start Koa app
-  // Link server and app
+  // Link Apollo server and Koa app
   apolloServer.applyMiddleware({ app })
 
   // Top level routing
   router.get('/', ctx => (ctx.body = 'revolt-graphql is up --- 1.0.0'))
-  router.use('/session', sessionRouter.routes())
-  router.use('/creators', creatorRouter.routes())
-  router.use('/user', userRouter.routes())
-  // router.use('/campaigns', campaignRouter.routes())
-  router.use('/collab', collabRouter.routes())
-  router.use('/youtuber', youtubeRouter.routes())
-  router.use('/conversations', conversationRouter.routes())
 
   // Middleware
   app.use(cors({ origin: process.env.APP_URL, credentials: true }))

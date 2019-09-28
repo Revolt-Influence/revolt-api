@@ -1,7 +1,6 @@
 import * as Router from 'koa-router'
 import { Resolver, Query, Ctx, Mutation, Arg } from 'type-graphql'
 import { universalLogin } from '.'
-import { getUserCampaignsAndCollabs } from '../campaign'
 import { errorNames } from '../../utils/errors'
 import { getExperiencesPage } from '../creator/experiences'
 import { getCreatorCollabs } from '../collab'
@@ -22,7 +21,7 @@ class SessionResolver {
     return createDefaultSession()
   }
 
-  @Mutation({ description: 'Login a user or a creator' })
+  @Mutation(() => Session, { description: 'Login a user or a creator' })
   async login(
     @Arg('email') email: string,
     @Arg('password') password: string,
@@ -33,11 +32,11 @@ class SessionResolver {
     return session
   }
 
-  @Mutation({ description: 'Destroy session for creator or user' })
+  @Mutation(() => Session, { description: 'Destroy session for creator or user' })
   async logout(@Ctx() ctx: MyContext): Promise<Session> {
     await ctx.logout()
     return createDefaultSession()
   }
 }
 
-export default router
+export { SessionResolver }

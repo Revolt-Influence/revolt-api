@@ -8,28 +8,24 @@ import { UserModel } from '../user/model'
 import { uploadToCloudinary } from '../../utils/pictures'
 import { CollabModel, CollabStatus } from '../collab/model'
 import { ConversationModel } from '../conversation/model'
+import { SignupCreatorInput, PaginatedCreatorResponse } from './resolver'
 
 const SALT_ROUNDS = 10
 const MINIMUM_INSTAGRAM_LIKES = 250
 const ADMIN_USERNAMES = ['remiv2', 'remi.rvlt']
 const CREATORS_PER_PAGE = 25
 
-interface PaginatedCreators {
-  totalPages: number
-  currentPage: number
-  creators: DocumentType<Creator>[]
-}
-
 async function getCreatorsPage(
   page: number,
   onlyWithLinkedNetworks: boolean,
   status?: CreatorStatus
-): Promise<PaginatedCreators> {
+): Promise<PaginatedCreatorResponse> {
+  // Prepare Mongo query
   // Prevent page 0, starts at 1
   const safePage = page < 1 ? 1 : page
   // Optionally filter by status
   const query = {} as any
-  if (status != null) {
+  if (!status) {
     query.status = status
   }
   if (onlyWithLinkedNetworks) {
@@ -39,21 +35,10 @@ async function getCreatorsPage(
     ]
   }
 
+  // Execute the query with pagination data
   const creatorsPromise = CreatorModel.find(query)
-    .select(
-      '-password -postalAddress -googleAccessToken -googleRefreshToken -resetPasswordToken -resetPasswordExpires'
-    )
     .skip((safePage - 1) * CREATORS_PER_PAGE)
     .limit(CREATORS_PER_PAGE)
-    .populate([
-      {
-        path: 'instagram',
-        populate: {
-          path: 'mentionedBrands',
-        },
-      },
-      { path: 'youtube' },
-    ])
     .sort({ signupDate: 'descending' }) // New to old
     .exec()
   const creatorsCountPromise = CreatorModel.find(query)
@@ -63,7 +48,7 @@ async function getCreatorsPage(
   return {
     currentPage: safePage,
     totalPages: Math.ceil(creatorsCount / CREATORS_PER_PAGE),
-    creators,
+    items: creators,
   }
 }
 
@@ -91,10 +76,7 @@ async function getFullCreatorById(
   return creator
 }
 
-async function signupCreator(
-  creator: Creator,
-  plainPassword: string
-): Promise<DocumentType<Creator>> {
+async function createCreator(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {
   // Check if data is complete
   if (
     creator == null ||
@@ -115,16 +97,13 @@ async function signupCreator(
   }
 
   // Actually create the creator
-  const unverifiedCreator = new CreatorModel({
-    ...creator,
-    instagramIsVerified: false,
-  } as Creator)
+  const savedCreator = new CreatorModel(creator as Partial<Creator>)
   // Hash password
-  const hash = await bcrypt.hash(plainPassword, SALT_ROUNDS)
-  unverifiedCreator.password = hash
+  const hashedPassword = await bcrypt.hash(creator.password, SALT_ROUNDS)
+  savedCreator.password = hashedPassword
   // Save unverified profile to mongoDB
-  await unverifiedCreator.save()
-  return unverifiedCreator
+  await savedCreator.save()
+  return savedCreator
 }
 
 async function saveCreatorProfile(
@@ -231,7 +210,7 @@ async function getAmbassadorStatus(creatorId: string): Promise<AmbassadorStatus>
 }
 
 export {
-  signupCreator,
+  createCreator,
   getFullCreatorById,
   saveCreatorProfile,
   updateCreatorContactInfo,

@@ -1,5 +1,6 @@
 import * as passport from 'koa-passport'
 import * as bcrypt from 'bcrypt'
+import * as uuid from 'uuid/v4'
 import { Strategy as LocalStrategy } from 'passport-local'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { UserInputError } from 'apollo-server-koa'
@@ -9,11 +10,13 @@ import { CustomError, errorNames } from '../../utils/errors'
 import { Session, SessionType } from './model'
 
 async function universalLogin(email: string, plainPassword: string): Promise<Session> {
+  const sessionId = uuid()
   try {
     // Try User login first
     const user = await userLogin(email, plainPassword)
     // Return only happens if userLogin hasn't thrown an error
     return {
+      sessionId,
       isLoggedIn: true,
       sessionType: SessionType.BRAND,
       user,
@@ -24,6 +27,7 @@ async function universalLogin(email: string, plainPassword: string): Promise<Ses
       const creator = await creatorLogin(email, plainPassword)
       // Return only happens if creatorLogin hasn't thrown an error
       return {
+        sessionId,
         isLoggedIn: true,
         sessionType: SessionType.CREATOR,
         creator,

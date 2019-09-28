@@ -5,7 +5,7 @@ import { Creator } from '../creator/model'
 import { Session, createDefaultSession, SessionType, MyContext } from '../session/model'
 import { createUser, updateUserContactInfo } from '.'
 import { changeUserPassword } from './password'
-import { AuthRole } from '../middleware/auth'
+import { AuthRole } from '../../middleware/auth'
 
 @InputType()
 class SignupUserInput implements Partial<User> {
@@ -43,15 +43,20 @@ class UserResolver {
 
   @Mutation(() => User, { description: 'Signup a brand user and start a session' })
   async signupUser(@Arg('user') user: SignupUserInput, @Ctx() ctx: MyContext): Promise<Session> {
+    // Create user
     const createdUser = await createUser(user)
     // Check if a session already exists to keep its ID to update Apollo Client cache
     const sessionId = ctx.state.user.sessionId || createDefaultSession().sessionId
-    return {
+    const newSessionData: Session = {
       sessionId,
       isLoggedIn: true,
       sessionType: SessionType.BRAND,
       user: createdUser,
     }
+    // Save session data in a cookie
+    await ctx.login(newSessionData)
+    // Send to client
+    return newSessionData
   }
 
   @Authorized(AuthRole.USER)
@@ -71,7 +76,7 @@ class UserResolver {
 
   @Authorized(AuthRole.USER)
   @Mutation(() => User, { description: 'Change user email and/or phone' })
-  async changeUserContactInfo(
+  async updateUserContactInfo(
     @Arg('newEmail') newEmail: string,
     @Arg('newPhone') newPhone: string,
     @Ctx() ctx: MyContext

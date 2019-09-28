@@ -70,7 +70,7 @@ class Creator {
 
   @Field({ description: 'Year of birth, used to get age approximation and ensure he is 13+' })
   @prop()
-  birthYear: number // 2002
+  birthYear: number
 
   @prop()
   password: string

@@ -1,5 +1,5 @@
 import { AuthChecker } from 'type-graphql'
-import { MyContext, SessionType } from '../session/model'
+import { MyContext, SessionType } from '../features/session/model'
 
 enum AuthRole {
   CREATOR = 'creator',

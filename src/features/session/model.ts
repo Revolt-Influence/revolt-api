@@ -1,6 +1,7 @@
 import { registerEnumType, Field, ObjectType, ID } from 'type-graphql'
 import { DefaultState, DefaultContext } from 'koa'
 import * as uuid from 'uuid/v4'
+import * as socketIo from 'socket.io'
 
 import { User } from '../user/model'
 import { Creator } from '../creator/model'
@@ -43,6 +44,7 @@ interface MyContext extends DefaultContext {
   logout: () => Promise<void>
   isAuthenticated: () => boolean
   isUnauthenticated: () => boolean
+  io: socketIo.Server
   state: StateSession
 }
 

@@ -1,5 +1,5 @@
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
-import { DashboardAction, Collab, CollabModel, CollabStatus } from './model'
+import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator } from '../creator/model'
 import { emailService } from '../../utils/emails'
@@ -59,9 +59,10 @@ async function notifyCollabRefused(collab: DocumentType<Collab>): Promise<void> 
 }
 
 async function reviewCollab(
-  collab: DocumentType<Collab>,
-  action: DashboardAction
+  collabId: mongoose.Types.ObjectId,
+  action: ReviewCollabDecision
 ): Promise<DocumentType<Collab>> {
+  const collab = await CollabModel.findById(collabId)
   // Common options for all the messages about to be sent
   const messageOptions: MessageOptions = {
     conversationId: collab.conversation as mongoose.Types.ObjectId,

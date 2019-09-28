@@ -1,13 +1,12 @@
-import { mongoose, DocumentType } from '@hasezoey/typegoose'
-import { Campaign, CampaignModel } from './model'
-import { CustomError, errorNames } from '../../utils/errors'
-import { CollabModel, Collab } from '../collab/model'
-import { getCampaignCollabs } from '../collab'
-import { flatten2dArray } from '../../utils/array'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { emailService } from '../../utils/emails'
-import { UserModel } from '../user/model'
+import { CustomError, errorNames } from '../../utils/errors'
+import { Brand, BrandModel } from '../brand/model'
+import { CollabModel } from '../collab/model'
 import { Creator } from '../creator/model'
-import { BrandModel, Brand } from '../brand/model'
+import { UserModel } from '../user/model'
+import { Campaign, CampaignModel } from './model'
+import { CampaignUpdateInput, PaginatedCampaignResponse } from './resolver'
 
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
 
@@ -37,10 +36,7 @@ async function getCampaignById(
   return campaign
 }
 
-async function getCampaignsFromQuery(
-  query: any,
-  page: number
-): Promise<{ campaigns: DocumentType<Campaign>[]; totalPages: number }> {
+async function getCampaignsFromQuery(query: any, page: number): Promise<PaginatedCampaignResponse> {
   const campaignsPromise = CampaignModel.find(query)
     .sort({ creationDate: 'descending' })
     .populate({
@@ -56,13 +52,13 @@ async function getCampaignsFromQuery(
     .exec()
   const [campaigns, totalCount] = await Promise.all([campaignsPromise, totalCountPromise])
   const totalPages = Math.ceil(totalCount / CAMPAIGNS_PER_PAGE)
-  return { campaigns, totalPages }
+  return { items: campaigns, totalPages, currentPage: page }
 }
 
 async function getUserCampaigns(
   userId: mongoose.Types.ObjectId,
   page: number = 1
-): Promise<{ campaigns: DocumentType<Campaign>[]; totalPages: number }> {
+): Promise<PaginatedCampaignResponse> {
   const query = { owner: userId }
   return getCampaignsFromQuery(query, page)
 }
@@ -72,29 +68,6 @@ async function getAdminCampaigns(userId: mongoose.Types.ObjectId, page: number =
     $or: [{ owner: userId }, { isArchived: false }, { isReviewed: true }] as Partial<Campaign>[],
   }
   return getCampaignsFromQuery(query, page)
-}
-
-async function getUserCampaignsAndCollabs(
-  userId: mongoose.Types.ObjectId,
-  page: number = 1
-): Promise<{
-  campaigns: DocumentType<Campaign>[]
-  collabs: DocumentType<Collab>[]
-  totalPages: number
-}> {
-  const { isAdmin } = await UserModel.findById(userId)
-  const { campaigns, totalPages } = await (isAdmin
-    ? getAdminCampaigns(userId)
-    : getUserCampaigns(userId))
-  const collabsPromises = campaigns.map(async _campaign => getCampaignCollabs(_campaign._id))
-  const collabs = await Promise.all(collabsPromises)
-  // Collabs is an array of arrays. We want a flat array
-  const flatCollabs = flatten2dArray<DocumentType<Collab>>(collabs)
-  return {
-    campaigns,
-    totalPages,
-    collabs: flatCollabs,
-  }
 }
 
 async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<void> {
@@ -162,7 +135,7 @@ async function reviewCampaign(
 
 async function updateCampaign(
   campaignId: mongoose.Types.ObjectId,
-  updatedCampaign: Campaign
+  updatedCampaign: CampaignUpdateInput
 ): Promise<DocumentType<Campaign>> {
   // Check if campaign exists
   const campaign = await getCampaignById(campaignId)
@@ -183,7 +156,7 @@ async function updateCampaign(
     const user = await UserModel.findOne({ email: campaign.owner })
     // Brand does not exist, create relation
     const newBrand = new BrandModel({
-      ...(updatedBrand as Brand),
+      ...updatedBrand,
       isSignedUp: true,
       users: [user._id],
     } as Brand)
@@ -191,10 +164,9 @@ async function updateCampaign(
     campaign.brand = newBrand._id
   } else {
     // Brand already exists, update it
-    const fullUpdatedBrand = updatedBrand as Brand
-    existingBrand.name = fullUpdatedBrand.name
-    existingBrand.logo = fullUpdatedBrand.logo
-    existingBrand.website = fullUpdatedBrand.website
+    existingBrand.name = updatedBrand.name
+    existingBrand.logo = updatedBrand.logo
+    existingBrand.website = updatedBrand.website
     await existingBrand.save()
     campaign.brand = existingBrand._id
   }
@@ -214,7 +186,6 @@ export {
   createCampaign,
   getCampaignById,
   getUserCampaigns,
-  getUserCampaignsAndCollabs,
   toggleArchiveCampaign,
   sendNewCampaignEmail,
   deleteCampaign,
