@@ -46,7 +46,7 @@ async function main(): Promise<void> {
 
   // Settings
   const PORT = process.env.PORT || 5000
-  app.keys = ['my-cool-key']
+  app.keys = [process.env.SESSION_SECRET]
 
   // Setup GraphQL schema
   const schema = await buildSchema({
