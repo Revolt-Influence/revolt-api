@@ -1,6 +1,6 @@
 import { Context } from 'koa'
-import * as dotenv from 'dotenv'
-import * as Sentry from '@sentry/node'
+import dotenv from 'dotenv'
+import Sentry from '@sentry/node'
 
 // Setup stuff
 dotenv.config()

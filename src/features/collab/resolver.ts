@@ -1,4 +1,4 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { Context } from 'koa'
 import { Resolver, Mutation, Authorized, Arg, Ctx, InputType, Field } from 'type-graphql'
 import { mongoose } from '@hasezoey/typegoose'

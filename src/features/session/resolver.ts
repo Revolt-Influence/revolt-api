@@ -1,4 +1,4 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { Resolver, Query, Ctx, Mutation, Arg } from 'type-graphql'
 import { universalLogin } from '.'
 import { errorNames } from '../../utils/errors'

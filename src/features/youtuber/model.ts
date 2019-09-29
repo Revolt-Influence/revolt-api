@@ -1,4 +1,4 @@
-import * as mongoose from 'mongoose'
+import mongoose from 'mongoose'
 import { prop, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
 import { loadType } from 'mongoose-float'
 import { Field, ObjectType, ID } from 'type-graphql'

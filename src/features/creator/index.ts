@@ -1,5 +1,5 @@
-import * as bcrypt from 'bcrypt'
-import * as superagent from 'superagent'
+import bcrypt from 'bcrypt'
+import superagent from 'superagent'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'

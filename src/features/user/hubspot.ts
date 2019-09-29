@@ -1,5 +1,5 @@
 import Hubspot from 'hubspot'
-import * as dotenv from 'dotenv'
+import dotenv from 'dotenv'
 import { User, UserModel } from './model'
 
 // Prepare env variables

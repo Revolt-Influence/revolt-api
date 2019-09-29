@@ -1,5 +1,5 @@
-import * as Stripe from 'stripe'
-import * as dotenv from 'dotenv'
+import Stripe from 'stripe'
+import dotenv from 'dotenv'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'

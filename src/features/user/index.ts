@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { User, UserModel } from './model'
 import { errorNames, CustomError } from '../../utils/errors'

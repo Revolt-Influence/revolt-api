@@ -1,5 +1,5 @@
-import * as mongoose from 'mongoose'
-import * as dotenv from 'dotenv'
+import mongoose from 'mongoose'
+import dotenv from 'dotenv'
 
 async function connectTestMongoose(done: jest.DoneCallback) {
   // Connect to the testing database if it's not already connected

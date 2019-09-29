@@ -1,4 +1,4 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { Resolver, Query, Authorized, Ctx, Arg, Mutation } from 'type-graphql'
 import { errorNames } from '../../utils/errors'

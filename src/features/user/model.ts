@@ -1,4 +1,4 @@
-import * as mongoose from 'mongoose'
+import mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, modelOptions } from '@hasezoey/typegoose'
 import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
 import { Creator } from '../creator/model'

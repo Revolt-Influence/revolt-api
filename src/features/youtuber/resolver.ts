@@ -1,4 +1,4 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { Context } from 'koa'
 import { Resolver, Query, Arg } from 'type-graphql'
 import { errorNames } from '../../utils/errors'
