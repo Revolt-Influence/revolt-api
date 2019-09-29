@@ -3,7 +3,6 @@ import * as Koa from 'koa'
 import * as Router from 'koa-router'
 import * as cors from '@koa/cors'
 import * as bodyParser from 'koa-bodyparser'
-import * as morgan from 'koa-morgan'
 import * as mongoose from 'mongoose'
 import * as dotenv from 'dotenv'
 import * as session from 'koa-session'
@@ -69,7 +68,6 @@ async function main(): Promise<void> {
 
   // Middleware
   app.use(cors({ origin: process.env.APP_URL, credentials: true }))
-  app.use(morgan('dev'))
   app.use(handleGlobalErrors)
   app.use(bodyParser())
   app.use(session(sessionConfig, app))
