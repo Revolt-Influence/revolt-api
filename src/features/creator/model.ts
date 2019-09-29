@@ -62,11 +62,9 @@ class Creator {
   @prop({ enum: Gender })
   gender: Gender
 
+  @Field({ description: 'Where the creator comes from' })
   @prop()
   country: string
-
-  @prop()
-  language: string
 
   @Field({ description: 'Year of birth, used to get age approximation and ensure he is 13+' })
   @prop()

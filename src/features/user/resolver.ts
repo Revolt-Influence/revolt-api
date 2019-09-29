@@ -42,12 +42,12 @@ class UserResolver {
     return null
   }
 
-  @Mutation(() => User, { description: 'Signup a brand user and start a session' })
+  @Mutation(() => Session, { description: 'Signup a brand user and start a session' })
   async signupUser(@Arg('user') user: SignupUserInput, @Ctx() ctx: MyContext): Promise<Session> {
     // Create user
     const createdUser = await createUser(user)
-    // Check if a session already exists to keep its ID to update Apollo Client cache
-    const sessionId = ctx.state.user.sessionId || createDefaultSession().sessionId
+    // Generate session ID to help Apollo Client cache data
+    const { sessionId } = createDefaultSession()
     const newSessionData: Session = {
       sessionId,
       isLoggedIn: true,

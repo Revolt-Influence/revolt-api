@@ -109,23 +109,10 @@ passport.deserializeUser((key: IKey, done) => {
 })
 
 passport.use(
-  'brand',
   new LocalStrategy(async (email, password, done) => {
     try {
-      const user = await userLogin(email, password)
-      return done(null, user)
-    } catch (error) {
-      return done(null, false)
-    }
-  })
-)
-
-passport.use(
-  'creator',
-  new LocalStrategy(async (email, password, done) => {
-    try {
-      const creator = await creatorLogin(email, password)
-      return done(null, creator)
+      const session = await universalLogin(email, password)
+      return done(null, session)
     } catch (error) {
       return done(null, false)
     }

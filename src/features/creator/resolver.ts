@@ -73,12 +73,15 @@ class CreatorResolver {
     return creator
   }
 
-  @Mutation(() => Creator, { description: 'Signup a creator and start a session' })
-  async signupUser(@Arg('user') user: SignupCreatorInput, @Ctx() ctx: MyContext): Promise<Session> {
+  @Mutation(() => Session, { description: 'Signup a creator and start a session' })
+  async signupCreator(
+    @Arg('creator') creator: SignupCreatorInput,
+    @Ctx() ctx: MyContext
+  ): Promise<Session> {
     // Create user
-    const createdCreator = await createCreator(user)
-    // Check if a session already exists to keep its ID to update Apollo Client cache
-    const sessionId = ctx.state.user.sessionId || createDefaultSession().sessionId
+    const createdCreator = await createCreator(creator)
+    // Generate session ID to help Apollo Client cache data
+    const { sessionId } = createDefaultSession()
     const newSessionData: Session = {
       sessionId,
       isLoggedIn: true,

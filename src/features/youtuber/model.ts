@@ -80,7 +80,9 @@ class YoutubeAudience {
   @arrayProp({ _id: false, items: AudienceMetric, type: AudienceMetric })
   ageGroups: AudienceMetric[]
 
-  @Field(() => [AudienceMetric])
+  @Field(() => [AudienceMetric], {
+    description: 'ISO 3166-1-alpha-2 codes of countries and their percentage',
+  })
   @arrayProp({ _id: false, items: AudienceMetric, type: AudienceMetric })
   countries: AudienceMetric[]
 
