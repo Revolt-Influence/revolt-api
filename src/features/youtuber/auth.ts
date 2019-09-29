@@ -3,7 +3,6 @@ import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator, CreatorModel } from '../creator/model'
 import { uploadToCloudinary } from '../../utils/pictures'
-import { getFullCreatorById } from '../creator'
 import { IChannelReport, RawYoutubeMetric, Youtuber, YoutuberModel, YoutubeVideo } from './model'
 import { getAudienceFromReport } from './audience'
 
@@ -51,10 +50,8 @@ async function linkYoutubeChannel(
   ) {
     throw new CustomError(400, errorNames.notEnoughFollowers)
   }
-  await attachYoutuberToCreator(creator, youtuber, googleData)
-  // Return populated creator without sensitive data
-  const fullCreator = await getFullCreatorById(creatorId)
-  return fullCreator
+  const updatedCreator = await attachYoutuberToCreator(creator, youtuber, googleData)
+  return updatedCreator
 }
 
 async function checkGoogleToken(code: string): Promise<IGoogleData> {

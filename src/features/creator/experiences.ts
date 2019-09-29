@@ -1,5 +1,4 @@
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
-import { getFullCreatorById } from '.'
 import { emailService } from '../../utils/emails'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Brand } from '../brand/model'
@@ -58,7 +57,7 @@ async function notifyNewCampaignProposition(
 ): Promise<void> {
   // Fetch data that's needed in the email
   const campaign = await getCampaignById(experienceId)
-  const creator = await getFullCreatorById(creatorId)
+  const creator = await CreatorModel.findById(creatorId)
   // Send the email
   await emailService.send({
     template: 'newCollabProposition',

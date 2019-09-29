@@ -52,30 +52,6 @@ async function getCreatorsPage(
   }
 }
 
-async function getFullCreatorById(
-  creatorId: mongoose.Types.ObjectId
-): Promise<DocumentType<Creator>> {
-  // Get creator from Mongo
-  const creator = await CreatorModel.findById(creatorId)
-    .select(
-      '-password -postalAddress -googleAccessToken -googleRefreshToken -resetPasswordToken -resetPasswordExpires'
-    )
-    .populate([
-      {
-        path: 'instagram',
-        populate: {
-          path: 'mentionedBrands',
-        },
-      },
-      { path: 'youtube' },
-    ])
-  // Check if creator exists
-  if (creator == null) {
-    throw new CustomError(400, errorNames.creatorNotFound)
-  }
-  return creator
-}
-
 async function createCreator(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {
   // Check if data is complete
   if (
@@ -97,7 +73,11 @@ async function createCreator(creator: SignupCreatorInput): Promise<DocumentType<
   }
 
   // Actually create the creator
-  const savedCreator = new CreatorModel(creator as Partial<Creator>)
+  const creatorDraft: Partial<Creator> = {
+    ...creator,
+    ambassador: creator.ambassador ? mongoose.Types.ObjectId(creator.ambassador) : undefined,
+  }
+  const savedCreator = new CreatorModel(creatorDraft)
   // Hash password
   const hashedPassword = await bcrypt.hash(creator.password, SALT_ROUNDS)
   savedCreator.password = hashedPassword
@@ -111,7 +91,7 @@ async function saveCreatorProfile(
   profile: { name: string; picture: string }
 ): Promise<DocumentType<Creator>> {
   // Safely get creator from Mongo
-  const creator = await getFullCreatorById(creatorId)
+  const creator = await CreatorModel.findById(creatorId)
   // Check if data is valid
   if (profile.name == null || profile.picture == null) {
     throw new CustomError(400, errorNames.invalidPayload)
@@ -120,7 +100,7 @@ async function saveCreatorProfile(
   creator.name = profile.name
   creator.picture = profile.picture
   await creator.save()
-  return getFullCreatorById(creator._id)
+  return creator
 }
 
 async function updateCreatorContactInfo(
@@ -140,7 +120,7 @@ async function updateCreatorContactInfo(
     throw new CustomError(400, errorNames.userAlreadyExists)
   }
   // Find and update creator
-  const creator = await getFullCreatorById(creatorId)
+  const creator = await CreatorModel.findById(creatorId)
   creator.email = email
   creator.phone = phone
   await creator.save()
@@ -151,7 +131,7 @@ async function setCreatorStatus(
   creatorId: mongoose.Types.ObjectId,
   newStatus: CreatorStatus
 ): Promise<DocumentType<Creator>> {
-  const creator = await getFullCreatorById(creatorId)
+  const creator = await CreatorModel.findById(creatorId)
   creator.status = newStatus
   await creator.save()
 
@@ -209,12 +189,38 @@ async function getAmbassadorStatus(creatorId: string): Promise<AmbassadorStatus>
   }
 }
 
+interface ChangeCreatorPasswordPayload {
+  creatorId: mongoose.Types.ObjectId
+  currentPassword: string
+  newPassword: string
+}
+async function changeCreatorPassword({
+  creatorId,
+  currentPassword,
+  newPassword,
+}: ChangeCreatorPasswordPayload): Promise<Creator> {
+  const creator = await CreatorModel.findById(creatorId)
+  if (!creator) {
+    throw new Error(errorNames.creatorNotFound)
+  }
+  // Check current password
+  const isValidPassword = await bcrypt.compare(currentPassword, creator.password)
+  if (!isValidPassword) {
+    throw new CustomError(400, errorNames.wrongPassword)
+  }
+  // Actually change password
+  const newPasswordHashed = await bcrypt.hash(newPassword, SALT_ROUNDS)
+  creator.password = newPasswordHashed
+  await creator.save()
+  return creator
+}
+
 export {
   createCreator,
-  getFullCreatorById,
   saveCreatorProfile,
   updateCreatorContactInfo,
   getCreatorsPage,
   setCreatorStatus,
   getAmbassadorStatus,
+  changeCreatorPassword,
 }

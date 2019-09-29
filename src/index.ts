@@ -64,14 +64,6 @@ async function main(): Promise<void> {
     authChecker: customAuthChecker,
   })
 
-  // Create Apollo Server instance
-  const apolloServer = new ApolloServer({
-    schema,
-    context: ({ ctx }: { ctx: Koa.ParameterizedContext<Session, MyContext> }) => ctx,
-  })
-  // Link Apollo server and Koa app
-  apolloServer.applyMiddleware({ app })
-
   // Top level routing
   router.get('/', ctx => (ctx.body = 'revolt-graphql is up --- 1.0.0'))
 
@@ -83,7 +75,14 @@ async function main(): Promise<void> {
   app.use(session(sessionConfig, app))
   app.use(passport.initialize())
   app.use(passport.session())
-  app.use(router.routes())
+
+  // Create Apollo Server instance
+  const apolloServer = new ApolloServer({
+    schema,
+    context: ({ ctx }: { ctx: Koa.ParameterizedContext<Session, MyContext> }) => ctx,
+  })
+  // Link Apollo server and Koa app
+  apolloServer.applyMiddleware({ app })
 
   io.on('connection', socket => {
     socket.on(socketEvents.JOIN_ROOM, roomId => {

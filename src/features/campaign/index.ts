@@ -5,8 +5,8 @@ import { Brand, BrandModel } from '../brand/model'
 import { CollabModel } from '../collab/model'
 import { Creator } from '../creator/model'
 import { UserModel } from '../user/model'
-import { Campaign, CampaignModel } from './model'
-import { CampaignUpdateInput, PaginatedCampaignResponse } from './resolver'
+import { Campaign, CampaignModel, CampaignProduct, TargetAudience } from './model'
+import { CampaignBriefInput, PaginatedCampaignResponse } from './resolver'
 
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
 
@@ -133,9 +133,9 @@ async function reviewCampaign(
   return campaign
 }
 
-async function updateCampaign(
+async function updateCampaignBrief(
   campaignId: mongoose.Types.ObjectId,
-  updatedCampaign: CampaignUpdateInput
+  updatedCampaign: CampaignBriefInput
 ): Promise<DocumentType<Campaign>> {
   // Check if campaign exists
   const campaign = await getCampaignById(campaignId)
@@ -143,43 +143,48 @@ async function updateCampaign(
     throw new CustomError(400, errorNames.campaignNotFound)
   }
 
-  // Separate brand from other settings since it's stored in another collection
-  const { brand: updatedBrand } = updatedCampaign
-
   // Save other settings
   campaign.name = updatedCampaign.name
-
-  // Check if the campaign already has an associated brand in Mongo
-  const existingBrand = await BrandModel.findById(campaign.brand)
-  if (existingBrand == null) {
-    // Find campaign owner to link him to the brand
-    const user = await UserModel.findOne({ email: campaign.owner })
-    // Brand does not exist, create relation
-    const newBrand = new BrandModel({
-      ...updatedBrand,
-      isSignedUp: true,
-      users: [user._id],
-    } as Brand)
-    await newBrand.save()
-    campaign.brand = newBrand._id
-  } else {
-    // Brand already exists, update it
-    existingBrand.name = updatedBrand.name
-    existingBrand.logo = updatedBrand.logo
-    existingBrand.website = updatedBrand.website
-    await existingBrand.save()
-    campaign.brand = existingBrand._id
-  }
-
-  // Apply all settings changes
   campaign.description = updatedCampaign.description
   campaign.rules = updatedCampaign.rules
-  campaign.product = updatedCampaign.product
-  campaign.targetAudience = updatedCampaign.targetAudience
 
   // Save and return populated campaign
   await campaign.save()
-  return getCampaignById(campaign._id)
+  return campaign
+}
+
+async function updateCampaignProduct(
+  campaignId: mongoose.Types.ObjectId,
+  updatedProduct: CampaignProduct
+): Promise<DocumentType<Campaign>> {
+  // Check if campaign exists
+  const campaign = await getCampaignById(campaignId)
+  if (campaign == null) {
+    throw new CustomError(400, errorNames.campaignNotFound)
+  }
+  // Set updates
+  campaign.product = updatedProduct
+  campaign.markModified('product')
+  // Save and return campaign
+  await campaign.save()
+  return campaign
+}
+
+async function updateCampaignTargetAudience(
+  campaignId: mongoose.Types.ObjectId,
+  updatedTarget: TargetAudience
+): Promise<DocumentType<Campaign>> {
+  // Check if campaign exists
+  const campaign = await getCampaignById(campaignId)
+  if (campaign == null) {
+    throw new CustomError(400, errorNames.campaignNotFound)
+  }
+  // Set updates
+  campaign.targetAudience = updatedTarget
+  campaign.markModified('targetAudience')
+  // Save and return campaign
+  await campaign.save()
+  return campaign
 }
 
 export {
@@ -191,5 +196,7 @@ export {
   deleteCampaign,
   getAdminCampaigns,
   reviewCampaign,
-  updateCampaign,
+  updateCampaignBrief,
+  updateCampaignProduct,
+  updateCampaignTargetAudience,
 }

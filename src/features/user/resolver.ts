@@ -6,9 +6,10 @@ import { Session, createDefaultSession, SessionType, MyContext } from '../sessio
 import { createUser, updateUserContactInfo } from '.'
 import { changeUserPassword } from './password'
 import { AuthRole } from '../../middleware/auth'
+import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
 
 @InputType()
-class SignupUserInput implements Partial<User> {
+class SignupUserInput {
   @Field({ description: 'Used for login and notification and marketing emails' })
   email: string
 
@@ -21,8 +22,8 @@ class SignupUserInput implements Partial<User> {
   @Field({ description: 'Only used to score the lead, not a relation' })
   company: string
 
-  @Field(() => Creator, { description: 'The creator who signed him up', nullable: true })
-  ambassador?: mongoose.Types.ObjectId
+  @Field({ description: 'The ID of the creator who signed him up', nullable: true })
+  ambassador?: string
 }
 
 @Resolver(User)
@@ -82,6 +83,40 @@ class UserResolver {
     @Ctx() ctx: MyContext
   ): Promise<User> {
     const updatedUser = await updateUserContactInfo(ctx.state.user.user._id, newEmail, newPhone)
+    return updatedUser
+  }
+
+  @Authorized(AuthRole.USER)
+  @Mutation(() => User, { description: 'Switch user to Premium plan' })
+  async upgradeUser(
+    @Arg('paymentToken') paymentToken: string,
+    @Arg('firstName') firstName: string,
+    @Arg('lastName') lastName: string,
+    @Ctx() ctx: MyContext
+  ): Promise<User> {
+    const updatedUser = await switchToPremium(
+      ctx.state.user.user._id,
+      firstName,
+      lastName,
+      paymentToken
+    )
+    return updatedUser
+  }
+
+  @Authorized(AuthRole.USER)
+  @Mutation(() => User, { description: 'Cancel user Premium plan to go back to free' })
+  async downgradeUser(@Ctx() ctx: MyContext): Promise<User> {
+    const updatedUser = await cancelPremium(ctx.state.user.user._id)
+    return updatedUser
+  }
+
+  @Authorized(AuthRole.USER)
+  @Mutation(() => User, { description: 'Change the card that Stripe charges for Premium' })
+  async updateCreditCard(
+    @Arg('newPaymentToken') newPaymentToken: string,
+    @Ctx() ctx: MyContext
+  ): Promise<User> {
+    const updatedUser = await updateCreditCard(ctx.state.user.user._id, newPaymentToken)
     return updatedUser
   }
 }

@@ -16,7 +16,9 @@ import {
   getUserCampaigns,
   reviewCampaign,
   toggleArchiveCampaign,
-  updateCampaign,
+  updateCampaignBrief,
+  updateCampaignProduct,
+  updateCampaignTargetAudience,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
@@ -29,24 +31,15 @@ const PaginatedCampaignResponse = PaginatedResponse(Campaign)
 type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
 
 @InputType()
-class CampaignUpdateInput implements Partial<Campaign> {
-  @Field(() => Brand)
-  brand: Brand
+class CampaignBriefInput implements Partial<Campaign> {
+  @Field()
+  name: string
 
   @Field()
   description: string
 
-  @Field()
-  name: string
-
-  @Field(() => CampaignProduct)
-  product: CampaignProduct
-
   @Field(() => [String])
   rules: string[]
-
-  @Field(() => TargetAudience)
-  targetAudience: TargetAudience
 }
 
 @Resolver()
@@ -84,12 +77,41 @@ class CampaignResolver {
   }
 
   @Authorized(AuthRole.USER)
-  @Mutation(() => Campaign, { description: 'Update existing campaign' })
-  async updateCampaign(
+  @Mutation(() => Campaign, { description: 'Update existing campaign name, description or rules' })
+  async updateCampaignBrief(
     @Arg('campaignId') campaignId: string,
-    @Arg('updatedCampaign') updatedCampaign: CampaignUpdateInput
+    @Arg('campaignBrief') campaignBrief: CampaignBriefInput
   ): Promise<Campaign> {
-    const savedCampaign = await updateCampaign(mongoose.Types.ObjectId(campaignId), updatedCampaign)
+    const savedCampaign = await updateCampaignBrief(
+      mongoose.Types.ObjectId(campaignId),
+      campaignBrief
+    )
+    return savedCampaign
+  }
+
+  @Authorized(AuthRole.USER)
+  @Mutation(() => Campaign, { description: 'Edit the product that the campaign promotes' })
+  async updateCampaignProduct(
+    @Arg('campaignId') campaignId: string,
+    @Arg('campaignProduct') campaignProduct: CampaignProduct
+  ): Promise<Campaign> {
+    const savedCampaign = await updateCampaignProduct(
+      mongoose.Types.ObjectId(campaignId),
+      campaignProduct
+    )
+    return savedCampaign
+  }
+
+  @Authorized(AuthRole.USER)
+  @Mutation(() => Campaign, { description: 'Change the audience that a campaign should reach' })
+  async updateCampaignTargetAudience(
+    @Arg('campaignId') campaignId: string,
+    @Arg('targetAudience') targetAudience: TargetAudience
+  ): Promise<Campaign> {
+    const savedCampaign = await updateCampaignTargetAudience(
+      mongoose.Types.ObjectId(campaignId),
+      targetAudience
+    )
     return savedCampaign
   }
 
@@ -118,4 +140,4 @@ class CampaignResolver {
   }
 }
 
-export { CampaignResolver, PaginatedCampaignResponse, CampaignUpdateInput }
+export { CampaignResolver, PaginatedCampaignResponse, CampaignBriefInput }

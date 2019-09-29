@@ -1,12 +1,13 @@
 import * as mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { Field, registerEnumType, ObjectType, ID } from 'type-graphql'
+import { Field, registerEnumType, ObjectType, ID, InputType } from 'type-graphql'
 import { Gender, AgeGroup } from '../creator/model'
 import { BrandModel, Brand } from '../brand/model'
 import { ReviewFormat } from '../review/model'
 import { User } from '../user/model'
 
 @ObjectType({ description: 'What a creator can receive' })
+@InputType('CampaignProductInput')
 class CampaignProduct {
   @Field({ description: 'Name of the product' })
   @prop({ default: '' })
@@ -20,9 +21,9 @@ class CampaignProduct {
   @prop({ default: '' })
   website: string
 
-  @Field({ description: 'Cloudinary URLs of promo images of the product' })
+  @Field(() => [String], { description: 'Cloudinary URLs of promo images of the product' })
   @prop({ default: '' })
-  pictures: string
+  pictures: string[]
 
   @Field({ nullable: true, description: 'Link of a YouTube video that presents the product' })
   @prop()
@@ -30,6 +31,7 @@ class CampaignProduct {
 }
 
 @ObjectType({ description: 'A model of the audience a brand wants to reach' })
+@InputType('CampaignAudienceInput')
 class TargetAudience {
   @Field(() => Gender, { description: 'Men, women or both' })
   @prop({ enum: Gender, type: String, default: Gender.ANY })
@@ -39,7 +41,7 @@ class TargetAudience {
   @arrayProp({ items: String, type: String, default: [] })
   countries: string[]
 
-  @Field(() => AgeGroup, { description: 'Groups of age' })
+  @Field(() => [AgeGroup], { description: 'Groups of age' })
   @arrayProp({ enum: AgeGroup, items: String, type: String, default: [] })
   ageGroups: AgeGroup[]
 }

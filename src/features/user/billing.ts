@@ -1,6 +1,6 @@
 import * as Stripe from 'stripe'
 import * as dotenv from 'dotenv'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'
@@ -41,32 +41,29 @@ async function createCustomer(token: string, email: string, fullName: string): P
 }
 
 async function switchToPremium(
-  email: string,
+  userId: mongoose.Types.ObjectId,
   firstName: string,
   lastName: string,
   token: string
 ): Promise<DocumentType<User>> {
   // Find user in database
-  const currentUser = await UserModel.findOne({ email })
-  if (currentUser == null) {
+  const user = await UserModel.findById(userId)
+  if (!user) {
     throw new CustomError(400, errorNames.userNotFound)
   }
-  console.log('user to upgrade', currentUser.email)
 
   // Create or retrieve Stripe customer
   const fullName = `${firstName} ${lastName}`
   let stripeCustomerId: string
-  if (currentUser.stripeCustomerId == null) {
-    stripeCustomerId = await createCustomer(token, email, fullName)
-    console.log('new stripe customer', stripeCustomerId)
+  if (user.stripeCustomerId == null) {
+    stripeCustomerId = await createCustomer(token, user.email, fullName)
   } else {
-    const { stripeCustomerId: currentCustomerId } = currentUser
+    const { stripeCustomerId: currentCustomerId } = user
     stripeCustomerId = currentCustomerId
     // Find customer object
-    const customer = await stripe.customers.retrieve(currentUser.stripeCustomerId)
-    console.log('existing customer', customer.id)
+    const customer = await stripe.customers.retrieve(user.stripeCustomerId)
     // Restore last 4 digits in database
-    currentUser.creditCardLast4 = (customer.sources && (customer.sources.data[0] as any)).last4
+    user.creditCardLast4 = (customer.sources && (customer.sources.data[0] as any)).last4
   }
 
   // Subscribe customer to Premium plan
@@ -74,32 +71,31 @@ async function switchToPremium(
     customer: stripeCustomerId,
     plan: premiumPlanId,
   })
-  console.log('subscription created')
 
   // Save changes in database
   const now: number = Date.now()
-  currentUser.plan = Plan.PREMIUM
-  currentUser.switchedToPremiumAt = new Date()
-  await currentUser.save()
+  user.plan = Plan.PREMIUM
+  user.switchedToPremiumAt = new Date()
+  await user.save()
   // TODO: save firstName and lastName
 
   if (upperCaseEnv === 'PRODUCTION') {
     // Save changes in Hubspot in the background
-    updateHubspotContact(currentUser)
+    updateHubspotContact(user)
   }
 
-  return currentUser
+  return user
 }
 
-async function cancelPremium(email: string): Promise<DocumentType<User> | null> {
+async function cancelPremium(userId: mongoose.Types.ObjectId): Promise<DocumentType<User> | null> {
   // Retrieve current user
-  const currentUser = await UserModel.findOne({ email })
-  if (currentUser == null) {
+  const user = await UserModel.findById(userId)
+  if (user == null) {
     throw new CustomError(400, errorNames.userNotFound)
   }
 
   // Find Stripe customer from user
-  const customer = await stripe.customers.retrieve(currentUser.stripeCustomerId)
+  const customer = await stripe.customers.retrieve(user.stripeCustomerId)
   if (customer == null) {
     throw new CustomError(400, errorNames.customerNotFound)
   }
@@ -110,33 +106,25 @@ async function cancelPremium(email: string): Promise<DocumentType<User> | null> 
 
   // Save changes in database
   const now: number = Date.now()
-  const updatedUser = await UserModel.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        plan: 'free',
-        switchToPremiumDate: null,
-        lastCountResetDate: now,
-        searchesCount: 0,
-        profilesCount: 0,
-        creditCardLast4: null,
-      },
-    },
-    { new: true }
-  )
+  user.plan = Plan.FREE
+  user.switchedToPremiumAt = undefined
+  user.creditCardLast4 = undefined
 
-  if (upperCaseEnv === 'PRODUCTION' && updatedUser) {
+  if (upperCaseEnv === 'PRODUCTION') {
     // Save changes in Hubspot in the background
-    updateHubspotContact(updatedUser)
+    updateHubspotContact(user)
   }
 
-  return updatedUser
+  return user
 }
 
-async function updateCreditCard(email: string, token: string): Promise<DocumentType<User>> {
+async function updateCreditCard(
+  userId: mongoose.Types.ObjectId,
+  token: string
+): Promise<DocumentType<User>> {
   // Find existing user in database
-  const user = await UserModel.findOne({ email })
-  if (user == null) {
+  const user = await UserModel.findById(userId)
+  if (!user) {
     throw new CustomError(400, errorNames.userNotFound)
   }
 

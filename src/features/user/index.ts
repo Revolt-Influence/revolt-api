@@ -23,7 +23,11 @@ async function createUser(user: SignupUserInput): Promise<DocumentType<User>> {
   user.password = hashedPassword
 
   // Save the user to MongoDB
-  const createdUser = await UserModel.create(user as Partial<User>)
+  const userDraft: Partial<User> = {
+    ...user,
+    ambassador: user.ambassador ? mongoose.Types.ObjectId(user.ambassador) : undefined,
+  }
+  const createdUser = await UserModel.create(userDraft)
 
   if (process.env.NODE_ENV === 'production') {
     // Save to hubspot in the background

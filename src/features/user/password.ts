@@ -5,7 +5,6 @@ import { UserModel, User } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
 import { CreatorModel, Creator } from '../creator/model'
-import { getFullCreatorById } from '../creator'
 
 const SALT_ROUNDS = 10
 
