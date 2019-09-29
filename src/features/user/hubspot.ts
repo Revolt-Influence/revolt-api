@@ -6,7 +6,7 @@ import { User, UserModel } from './model'
 dotenv.config()
 
 const hubspot = new Hubspot({
-  apiKey: process.env.HUBSPOT_API_KEY,
+  apiKey: process.env.HUBSPOT_API_KEY as string,
 })
 
 interface IHubspotProperty {
@@ -35,10 +35,6 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
       value: user.email,
     },
     {
-      property: 'should_contact',
-      value: user.wantsHelp == null ? null : user.wantsHelp,
-    },
-    {
       property: 'uses_app',
       value: true,
     },
@@ -59,13 +55,9 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
       value: user.company == null ? '' : user.company,
     },
     {
-      property: 'confirmed_email',
-      value: user.hasVerifiedEmail == null ? false : user.hasVerifiedEmail,
-    },
-    {
       property: 'app_signup',
       // Round to nearest day by substracting modulo 1 day in milliseconds
-      value: user.signupDate - (user.signupDate % (1000 * 60 * 60 * 24)),
+      value: user.createdAt.getTime() - (user.createdAt.getTime() % (1000 * 60 * 60 * 24)),
     },
   ]
 }

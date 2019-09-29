@@ -1,37 +1,40 @@
 import * as passport from 'koa-passport'
 import * as bcrypt from 'bcrypt'
+import * as uuid from 'uuid/v4'
 import { Strategy as LocalStrategy } from 'passport-local'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { UserInputError } from 'apollo-server-koa'
 import { UserModel, User } from '../user/model'
 import { Creator, CreatorModel } from '../creator/model'
 import { CustomError, errorNames } from '../../utils/errors'
+import { Session, SessionType } from './model'
 
-type SessionType = 'creator' | 'brand'
-
-interface ISessionState {
-  sessionType: SessionType
-  user: DocumentType<User> | DocumentType<Creator>
-}
-
-async function universalLogin(email: string, plainPassword: string): Promise<ISessionState> {
+async function universalLogin(email: string, plainPassword: string): Promise<Session> {
+  const sessionId = uuid()
   try {
     // Try User login first
     const user = await userLogin(email, plainPassword)
+    // Return only happens if userLogin hasn't thrown an error
     return {
-      sessionType: 'brand',
+      sessionId,
+      isLoggedIn: true,
+      sessionType: SessionType.BRAND,
       user,
     }
   } catch (error) {
     try {
       // Then try Creator login
       const creator = await creatorLogin(email, plainPassword)
+      // Return only happens if creatorLogin hasn't thrown an error
       return {
-        sessionType: 'creator',
-        user: creator,
+        sessionId,
+        isLoggedIn: true,
+        sessionType: SessionType.CREATOR,
+        creator,
       }
     } catch (error) {
       // Neither User nor Creator, throw an error
-      throw new CustomError(422, errorNames.loginFail)
+      throw new UserInputError(errorNames.loginFail)
     }
   }
 }
@@ -42,8 +45,8 @@ async function userLogin(email: string, plainPassword: string): Promise<Document
     // User does not exist
     throw new CustomError(422, errorNames.loginFail)
   }
-  const { passwordHash } = user
-  const isValidPassword = await bcrypt.compare(plainPassword, passwordHash)
+  const { password } = user
+  const isValidPassword = await bcrypt.compare(plainPassword, password)
   if (!isValidPassword) {
     // Invalid passport
     throw new CustomError(422, errorNames.loginFail)
@@ -57,8 +60,8 @@ async function creatorLogin(email: string, plainPassword: string): Promise<Docum
     // User does not exist
     throw new CustomError(422, errorNames.loginFail)
   }
-  const { passwordHash } = creator
-  const isValidPassword = await bcrypt.compare(plainPassword, passwordHash)
+  const { password } = creator
+  const isValidPassword = await bcrypt.compare(plainPassword, password)
   if (!isValidPassword) {
     // Invalid passport
     throw new CustomError(422, errorNames.loginFail)
@@ -67,17 +70,28 @@ async function creatorLogin(email: string, plainPassword: string): Promise<Docum
 }
 
 interface IKey {
-  type: 'brand' | 'creator'
-  id: string
+  type: SessionType
+  id: mongoose.Types.ObjectId
 }
 
-passport.serializeUser((userOrCreator: ISessionState, done) => {
-  const key = { type: userOrCreator.sessionType, id: userOrCreator.user._id } as IKey
+passport.serializeUser((session: Session, done) => {
+  const getId = (): mongoose.Types.ObjectId | undefined => {
+    switch (session.sessionType) {
+      case SessionType.BRAND:
+        return session.user && session.user._id
+      case SessionType.CREATOR:
+        return session.creator && session.creator._id
+      default:
+        return undefined
+    }
+  }
+  const idToKeep = getId()
+  const key = { type: session.sessionType, id: idToKeep } as IKey
   done(null, key)
 })
 
 passport.deserializeUser((key: IKey, done) => {
-  if (key.type === 'brand') {
+  if (key.type === SessionType.BRAND) {
     UserModel.findById(key.id, (err, user) => {
       if (err != null || user == null) {
         return done(err, null)
@@ -85,40 +99,24 @@ passport.deserializeUser((key: IKey, done) => {
       return done(err, { ...user.toObject(), sessionType: 'brand' })
     })
   } else {
-    CreatorModel.findById(key.id)
-      .select('-googleAccessToken -googleRefreshToken -passwordHash')
-      .populate('instagram youtube')
-      .exec((err, creator) => {
-        if (err != null || creator == null) {
-          return done(err, null)
-        }
-        return done(err, { ...creator.toObject(), sessionType: 'creator' })
-      })
+    CreatorModel.findById(key.id).exec((err, creator) => {
+      if (err != null || creator == null) {
+        return done(err, null)
+      }
+      return done(err, { ...creator.toObject(), sessionType: 'creator' })
+    })
   }
 })
 
 passport.use(
-  'brand',
   new LocalStrategy(async (email, password, done) => {
     try {
-      const user = await userLogin(email, password)
-      return done(null, user)
+      const session = await universalLogin(email, password)
+      return done(null, session)
     } catch (error) {
       return done(null, false)
     }
   })
 )
 
-passport.use(
-  'creator',
-  new LocalStrategy(async (email, password, done) => {
-    try {
-      const creator = await creatorLogin(email, password)
-      return done(null, creator)
-    } catch (error) {
-      return done(null, false)
-    }
-  })
-)
-
-export { passport, universalLogin, ISessionState, SessionType }
+export { passport, universalLogin, SessionType }

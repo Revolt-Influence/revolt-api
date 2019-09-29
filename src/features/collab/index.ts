@@ -1,5 +1,5 @@
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
-import { DashboardAction, Collab, CollabModel, CollabStatus } from './model'
+import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator } from '../creator/model'
 import { emailService } from '../../utils/emails'
@@ -29,10 +29,10 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
   await emailService.send({
     template: 'collabAccepted',
     locals: {
-      brandName: (campaign.settings.brand as Brand).name,
+      brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
       campaignName: campaign.name,
-      productName: campaign.settings.gift.name,
+      productName: campaign.product.name,
       collabLink: `${process.env.APP_URL}/creator/experiences/${collab._id}`,
     },
     message: {
@@ -47,8 +47,8 @@ async function notifyCollabRefused(collab: DocumentType<Collab>): Promise<void> 
   await emailService.send({
     template: 'collabRefused',
     locals: {
-      brandName: (campaign.settings.brand as Brand).name,
-      username: (collab.creator as Creator).instagramUsername,
+      brandName: (campaign.brand as Brand).name,
+      username: (collab.creator as Creator).name,
       campaignName: campaign.name,
     },
     message: {
@@ -59,9 +59,10 @@ async function notifyCollabRefused(collab: DocumentType<Collab>): Promise<void> 
 }
 
 async function reviewCollab(
-  collab: DocumentType<Collab>,
-  action: DashboardAction
+  collabId: mongoose.Types.ObjectId,
+  action: ReviewCollabDecision
 ): Promise<DocumentType<Collab>> {
+  const collab = await CollabModel.findById(collabId)
   // Common options for all the messages about to be sent
   const messageOptions: MessageOptions = {
     conversationId: collab.conversation as mongoose.Types.ObjectId,
@@ -84,13 +85,12 @@ async function reviewCollab(
       // Send message in the background
       sendMessage({
         ...messageOptions,
-        text: `✅ ${
-          (relatedCampaign.settings.brand as Brand).name
-        } a accepté la collab pour la campagne "${relatedCampaign.name}"`,
+        text: `✅ ${(relatedCampaign.brand as Brand).name} a accepté la collab pour la campagne "${
+          relatedCampaign.name
+        }"`,
       })
       // Mark as accepted
-      collab.acceptedDate = now
-      collab.status = CollabStatus.accepted
+      collab.status = CollabStatus.ACCEPTED
       break
     case 'refuse':
       // Send an email to the creator in the background
@@ -102,21 +102,19 @@ async function reviewCollab(
       // Send message in the background
       sendMessage({
         ...messageOptions,
-        text: `😞 ${
-          (relatedCampaign.settings.brand as Brand).name
-        } a refusé la collab pour la campagne "${relatedCampaign.name}"`,
+        text: `😞 ${(relatedCampaign.brand as Brand).name} a refusé la collab pour la campagne "${
+          relatedCampaign.name
+        }"`,
       })
-      collab.refusedDate = now
-      collab.status = CollabStatus.refused
+      collab.status = CollabStatus.DENIED
       break
     case 'markAsSent':
-      collab.sentDate = now
-      collab.status = CollabStatus.sent
+      collab.status = CollabStatus.SENT
       // Send message in the background
       sendMessage({
         ...messageOptions,
-        text: `🎁 ${(relatedCampaign.settings.brand as Brand).name} a envoyé le produit ${
-          relatedCampaign.settings.gift.name
+        text: `🎁 ${(relatedCampaign.brand as Brand).name} a envoyé le produit ${
+          relatedCampaign.product.name
         }`,
       })
       break
@@ -131,10 +129,6 @@ async function reviewCollab(
     select: 'email phone birthday gender country name picture',
     populate: [
       {
-        path: 'instagram',
-        select: 'picture_url followers post_count username likes comments',
-      },
-      {
         path: 'youtube',
       },
     ],
@@ -148,10 +142,6 @@ async function getCampaignCollabs(campaignId: string): Promise<DocumentType<Coll
       path: 'creator',
       select: 'email phone birthday gender country name picture',
       populate: [
-        {
-          path: 'instagram',
-          select: 'picture_url followers post_count username likes comments',
-        },
         {
           path: 'youtube',
         },

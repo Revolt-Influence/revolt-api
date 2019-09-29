@@ -32,7 +32,7 @@ async function getYoutubeVideoData(videoId: string): Promise<YoutubeVideo> {
     viewCount: parseInt(statistics.viewCount),
     commentCount: parseInt(statistics.commentCount),
     likeCount: parseInt(statistics.likeCount),
-    publishedDate: new Date(snippet.publishedAt).getTime(),
+    publishedAt: new Date(snippet.publishedAt),
   }
   return video
 }

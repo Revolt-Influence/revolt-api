@@ -1,24 +1,21 @@
-import { mongoose, DocumentType } from '@hasezoey/typegoose'
-import { Campaign, CampaignModel, initialCampaignSettings } from './model'
-import { CustomError, errorNames } from '../../utils/errors'
-import { CollabModel, Collab } from '../collab/model'
-import { getCampaignCollabs } from '../collab'
-import { flatten2dArray } from '../../utils/array'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { emailService } from '../../utils/emails'
-import { UserModel } from '../user/model'
+import { CustomError, errorNames } from '../../utils/errors'
+import { Brand, BrandModel } from '../brand/model'
+import { CollabModel } from '../collab/model'
 import { Creator } from '../creator/model'
-import { BrandModel, Brand } from '../brand/model'
+import { UserModel } from '../user/model'
+import { Campaign, CampaignModel, CampaignProduct, TargetAudience } from './model'
+import { CampaignBriefInput, PaginatedCampaignResponse } from './resolver'
 
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
 
-async function createCampaign(owner: string): Promise<DocumentType<Campaign>> {
+async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentType<Campaign>> {
   // Prepare campaign
   const campaign = new CampaignModel({
     owner,
     name: 'Ma nouvelle campagne',
-    creationDate: Date.now(),
-    settings: initialCampaignSettings,
-  })
+  } as Partial<Campaign>)
   // Save campaign to database
   await campaign.save()
   return campaign
@@ -39,10 +36,7 @@ async function getCampaignById(
   return campaign
 }
 
-async function getCampaignsFromQuery(
-  query: any,
-  page: number
-): Promise<{ campaigns: DocumentType<Campaign>[]; totalPages: number }> {
+async function getCampaignsFromQuery(query: any, page: number): Promise<PaginatedCampaignResponse> {
   const campaignsPromise = CampaignModel.find(query)
     .sort({ creationDate: 'descending' })
     .populate({
@@ -58,59 +52,36 @@ async function getCampaignsFromQuery(
     .exec()
   const [campaigns, totalCount] = await Promise.all([campaignsPromise, totalCountPromise])
   const totalPages = Math.ceil(totalCount / CAMPAIGNS_PER_PAGE)
-  return { campaigns, totalPages }
+  return { items: campaigns, totalPages, currentPage: page }
 }
 
 async function getUserCampaigns(
-  email: string,
-  page: number = 0
-): Promise<{ campaigns: DocumentType<Campaign>[]; totalPages: number }> {
-  const query = { owner: email }
+  userId: mongoose.Types.ObjectId,
+  page: number = 1
+): Promise<PaginatedCampaignResponse> {
+  const query = { owner: userId }
   return getCampaignsFromQuery(query, page)
 }
 
-async function getAdminCampaigns(email: string, page: number = 0) {
+async function getAdminCampaigns(userId: mongoose.Types.ObjectId, page: number = 1) {
   const query = {
-    $or: [{ owner: email }, { isArchived: false }, { isReviewed: true }] as Partial<Campaign>[],
+    $or: [{ owner: userId }, { isArchived: false }, { isReviewed: true }] as Partial<Campaign>[],
   }
   return getCampaignsFromQuery(query, page)
-}
-
-async function getUserCampaignsAndCollabs(
-  email: string,
-  page: number = 0
-): Promise<{
-  campaigns: DocumentType<Campaign>[]
-  collabs: DocumentType<Collab>[]
-  totalPages: number
-}> {
-  const { plan } = await UserModel.findOne({ email })
-  const { campaigns, totalPages } = await (plan === 'admin'
-    ? getAdminCampaigns(email)
-    : getUserCampaigns(email))
-  const collabsPromises = campaigns.map(async _campaign => getCampaignCollabs(_campaign._id))
-  const collabs = await Promise.all(collabsPromises)
-  // Collabs is an array of arrays. We want a flat array
-  const flatCollabs = flatten2dArray<DocumentType<Collab>>(collabs)
-  return {
-    campaigns,
-    totalPages,
-    collabs: flatCollabs,
-  }
 }
 
 async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<void> {
-  const brandUser = await UserModel.findOne({ email: campaign.owner }).populate('ambassador')
-  const ambassador = brandUser.ambassador as Creator
+  const brandUser = await UserModel.findById(campaign.owner).populate('ambassador')
+  const ambassador = brandUser && (brandUser.ambassador as Creator)
   await emailService.send({
     template: 'newCampaign',
     locals: {
       campaignName: campaign.name,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=brief`,
-      brandName: (campaign.settings.brand as DocumentType<Brand>).name,
+      brandName: (campaign.brand as DocumentType<Brand>).name,
       brandEmail: campaign.owner,
       ambassador: ambassador && ambassador.email,
-      isPremium: brandUser.plan !== 'free',
+      isPremium: brandUser && brandUser.plan !== 'free',
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -132,17 +103,19 @@ async function toggleArchiveCampaign(
   return campaign
 }
 
-async function deleteCampaign(campaignId: mongoose.Types.ObjectId, email: string): Promise<void> {
+async function deleteCampaign(
+  campaignId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId
+): Promise<void> {
   // Get campaign and user from Mongo
   const campaign = await getCampaignById(campaignId)
-  const user = await UserModel.findOne({ email })
-  const isAdmin = user.plan === 'admin'
-  // Only allow the user to delete a campaign
-  if (campaign.owner !== email && !isAdmin) {
+  const user = await UserModel.findById(userId)
+  // Only allow the owner or an admin to delete a campaign
+  if (campaign.owner !== userId && !user.isAdmin) {
     throw new CustomError(401, errorNames.unauthorized)
   }
   // Only allow if the campaign isn't online
-  if (campaign.isReviewed && !isAdmin) {
+  if (campaign.isReviewed && !user.isAdmin) {
     throw new CustomError(401, errorNames.unauthorized)
   }
   // Delete all collabs linked to the campaign
@@ -160,9 +133,9 @@ async function reviewCampaign(
   return campaign
 }
 
-async function saveCampaignSettings(
+async function updateCampaignBrief(
   campaignId: mongoose.Types.ObjectId,
-  newCampaign: Campaign
+  updatedCampaign: CampaignBriefInput
 ): Promise<DocumentType<Campaign>> {
   // Check if campaign exists
   const campaign = await getCampaignById(campaignId)
@@ -170,56 +143,60 @@ async function saveCampaignSettings(
     throw new CustomError(400, errorNames.campaignNotFound)
   }
 
-  // Separate brand from other settings since it's stored in another collection
-  const { brand } = newCampaign.settings
-
   // Save other settings
-  campaign.name = newCampaign.name
-  // campaign.settings = { ...campaign.settings, ...otherSettings }
-
-  // Check if the campaign already has an associated brand in Mongo
-  const existingBrand = await BrandModel.findById(campaign.settings && campaign.settings.brand)
-  if (existingBrand == null) {
-    // Find campaign owner to link him to the brand
-    const user = await UserModel.findOne({ email: campaign.owner })
-    // Brand does not exist, create relation
-    const newBrand = new BrandModel({
-      ...(brand as Brand),
-      isSignedUp: true,
-      users: [user._id],
-    } as Brand)
-    await newBrand.save()
-    campaign.settings.brand = newBrand._id
-  } else {
-    // Brand already exists, update it
-    Object.entries(brand).forEach(_entry => {
-      const [key, value] = _entry
-      existingBrand[key] = value
-    })
-    await existingBrand.save()
-    campaign.settings.brand = existingBrand._id
-  }
-
-  // Apply all settings changes
-  campaign.settings.brief = newCampaign.settings.brief
-  campaign.settings.gift = newCampaign.settings.gift
-  campaign.settings.target = newCampaign.settings.target
-  campaign.settings.task = newCampaign.settings.task
+  campaign.name = updatedCampaign.name
+  campaign.description = updatedCampaign.description
+  campaign.rules = updatedCampaign.rules
 
   // Save and return populated campaign
   await campaign.save()
-  return getCampaignById(campaign._id)
+  return campaign
+}
+
+async function updateCampaignProduct(
+  campaignId: mongoose.Types.ObjectId,
+  updatedProduct: CampaignProduct
+): Promise<DocumentType<Campaign>> {
+  // Check if campaign exists
+  const campaign = await getCampaignById(campaignId)
+  if (campaign == null) {
+    throw new CustomError(400, errorNames.campaignNotFound)
+  }
+  // Set updates
+  campaign.product = updatedProduct
+  campaign.markModified('product')
+  // Save and return campaign
+  await campaign.save()
+  return campaign
+}
+
+async function updateCampaignTargetAudience(
+  campaignId: mongoose.Types.ObjectId,
+  updatedTarget: TargetAudience
+): Promise<DocumentType<Campaign>> {
+  // Check if campaign exists
+  const campaign = await getCampaignById(campaignId)
+  if (campaign == null) {
+    throw new CustomError(400, errorNames.campaignNotFound)
+  }
+  // Set updates
+  campaign.targetAudience = updatedTarget
+  campaign.markModified('targetAudience')
+  // Save and return campaign
+  await campaign.save()
+  return campaign
 }
 
 export {
   createCampaign,
   getCampaignById,
   getUserCampaigns,
-  getUserCampaignsAndCollabs,
   toggleArchiveCampaign,
   sendNewCampaignEmail,
   deleteCampaign,
   getAdminCampaigns,
   reviewCampaign,
-  saveCampaignSettings,
+  updateCampaignBrief,
+  updateCampaignProduct,
+  updateCampaignTargetAudience,
 }

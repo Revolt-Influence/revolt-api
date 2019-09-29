@@ -1,15 +1,15 @@
 import * as bcrypt from 'bcrypt'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { User, UserModel } from './model'
 import { errorNames, CustomError } from '../../utils/errors'
-import { spammyDomains } from '../../utils/emails'
 import { createHubspotContact } from './hubspot'
 import { CreatorModel } from '../creator/model'
 import { CampaignModel } from '../campaign/model'
+import { SignupUserInput } from './resolver'
 
 const SALT_ROUNDS = 10
 
-async function createUser(user: User, plainPassword: string): Promise<DocumentType<User>> {
+async function createUser(user: SignupUserInput): Promise<DocumentType<User>> {
   const { email } = user
   // Prevent duplicate users
   const maybeExistingUser = await UserModel.findOne({ email })
@@ -18,76 +18,50 @@ async function createUser(user: User, plainPassword: string): Promise<DocumentTy
     throw new CustomError(400, errorNames.userAlreadyExists)
   }
 
-  // Prevent spammy emails
-  if (email.includes('+') || spammyDomains.some(domain => email.endsWith(`@${domain}`))) {
-    throw new CustomError(400, errorNames.spammyAddress)
-  }
-
-  // Prevent signing up as Premium or Admin
-  if (user.plan !== 'free') {
-    throw new CustomError(400, errorNames.default)
-  }
-
   // Create password hash
-  const hash = await bcrypt.hash(plainPassword, SALT_ROUNDS)
-  const fullUser = { ...user, passwordHash: hash }
+  const hashedPassword = await bcrypt.hash(user.password, SALT_ROUNDS)
+  user.password = hashedPassword
 
   // Save the user to MongoDB
-  const createdUser = await UserModel.create(fullUser)
+  const userDraft: Partial<User> = {
+    ...user,
+    ambassador: user.ambassador ? mongoose.Types.ObjectId(user.ambassador) : undefined,
+  }
+  const createdUser = await UserModel.create(userDraft)
 
   if (process.env.NODE_ENV === 'production') {
     // Save to hubspot in the background
-    createHubspotContact(fullUser)
+    createHubspotContact(createdUser)
   }
 
   // Return created data to frontend
   return createdUser
 }
 
-interface IUpdateUserInfoPayload {
-  email: string
-  phone: string
-}
-
-async function updateUserInfo(
-  currentEmail: string,
-  info: IUpdateUserInfoPayload
+async function updateUserContactInfo(
+  userId: mongoose.Types.ObjectId,
+  newEmail: string,
+  newPhone: string
 ): Promise<DocumentType<User>> {
-  const { email, phone } = info
-
-  // Prevent spammy emails
-  if (spammyDomains.some(domain => email.includes(domain))) {
-    throw new CustomError(400, errorNames.spammyAddress)
+  // Find and update user
+  const user = await UserModel.findById(userId)
+  if (!user) {
+    throw new Error(errorNames.userNotFound)
   }
 
   // Prevent already used email
-  const otherUser = await UserModel.findOne({ email })
-  if (email !== currentEmail && otherUser != null) {
+  const maybeOtherUser = await UserModel.findOne({ email: newEmail })
+  if (maybeOtherUser && maybeOtherUser._id !== userId) {
     throw new CustomError(400, errorNames.userAlreadyExists)
   }
 
-  // Find and update user
-  const user = await UserModel.findOne({ email: currentEmail })
-  user.email = email
-  user.phone = phone
-  if (currentEmail !== email) {
-    // Force email verification
-    user.hasVerifiedEmail = false
-  }
+  user.email = newEmail
+  user.phone = newPhone
   await user.save()
 
-  // Update user campaigns
-  if (email !== currentEmail) {
-    const campaigns = await CampaignModel.find({ owner: currentEmail })
-    const updateCampaignsPromises = campaigns.map(async _campaign => {
-      _campaign.owner = email
-      await _campaign.save()
-    })
-    await Promise.all(updateCampaignsPromises)
-  }
   return user
 }
 
 export * from './billing'
 export * from './password'
-export { createUser, updateUserInfo, IUpdateUserInfoPayload }
+export { createUser, updateUserContactInfo }

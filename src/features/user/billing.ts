@@ -1,16 +1,16 @@
 import * as Stripe from 'stripe'
 import * as dotenv from 'dotenv'
-import { DocumentType } from '@hasezoey/typegoose'
-import { User, UserModel } from './model'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'
 
 dotenv.config()
 
 // Setup Stripe stuff
-const upperCaseEnv = process.env.NODE_ENV.toUpperCase()
-const secretKey = process.env[`STRIPE_SECRET_KEY_${upperCaseEnv}`]
-const stripe = new Stripe(secretKey)
+const upperCaseEnv = process.env.NODE_ENV && process.env.NODE_ENV.toUpperCase()
+const secretKey = process.env.STRIPE_SECRET_KEY
+const stripe = new Stripe(secretKey as string)
 const premiumPlanId = 'plan_FeOlduEF2o9fdt'
 
 async function createCustomer(token: string, email: string, fullName: string): Promise<string> {
@@ -26,8 +26,9 @@ async function createCustomer(token: string, email: string, fullName: string): P
     { email },
     {
       $set: {
-        customerId: customer.id,
-        creditCardLast4: (customer.sources.data[0] as any).last4,
+        stripeCustomerId: customer.id,
+        creditCardLast4: (customer.sources && (customer.sources.data[0] as any)).last4,
+        // creditCardLast4: (customer.sources.data[0] as any).last4,
       },
     }
   )
@@ -40,83 +41,61 @@ async function createCustomer(token: string, email: string, fullName: string): P
 }
 
 async function switchToPremium(
-  email: string,
+  userId: mongoose.Types.ObjectId,
   firstName: string,
   lastName: string,
   token: string
 ): Promise<DocumentType<User>> {
   // Find user in database
-  const currentUser = await UserModel.findOne({ email })
-  if (currentUser == null) {
+  const user = await UserModel.findById(userId)
+  if (!user) {
     throw new CustomError(400, errorNames.userNotFound)
   }
-  console.log('user to upgrade', currentUser.email)
 
   // Create or retrieve Stripe customer
   const fullName = `${firstName} ${lastName}`
-  let customerId: string
-  if (currentUser.customerId == null) {
-    customerId = await createCustomer(token, email, fullName)
-    console.log('new stripe customer', customerId)
+  let stripeCustomerId: string
+  if (user.stripeCustomerId == null) {
+    stripeCustomerId = await createCustomer(token, user.email, fullName)
   } else {
-    const { customerId: currentCustomerId } = currentUser
-    customerId = currentCustomerId
+    const { stripeCustomerId: currentCustomerId } = user
+    stripeCustomerId = currentCustomerId
     // Find customer object
-    const customer = await stripe.customers.retrieve(currentUser.customerId)
-    console.log('existing customer', customer.id)
+    const customer = await stripe.customers.retrieve(user.stripeCustomerId)
     // Restore last 4 digits in database
-    await UserModel.findOneAndUpdate(
-      { email },
-      {
-        $set: {
-          creditCardLast4: (customer.sources.data[0] as any).last4,
-        },
-      }
-    )
+    user.creditCardLast4 = (customer.sources && (customer.sources.data[0] as any)).last4
   }
 
   // Subscribe customer to Premium plan
   await stripe.subscriptions.create({
-    customer: customerId,
+    customer: stripeCustomerId,
     plan: premiumPlanId,
   })
-  console.log('subscription created')
 
   // Save changes in database
   const now: number = Date.now()
-  const updatedUser = await UserModel.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        firstName,
-        lastName,
-        plan: 'premium',
-        switchToPremiumDate: now,
-        lastCountResetDate: now,
-        searchesCount: 0,
-        profilesCount: 0,
-      },
-    },
-    { new: true }
-  )
+  user.plan = Plan.PREMIUM
+  user.switchedToPremiumAt = new Date()
+  await user.save()
+  // TODO: save firstName and lastName
 
   if (upperCaseEnv === 'PRODUCTION') {
     // Save changes in Hubspot in the background
-    updateHubspotContact(updatedUser)
+    updateHubspotContact(user)
   }
 
-  return updatedUser
+  return user
 }
 
-async function cancelPremium(email: string): Promise<DocumentType<User>> {
+async function cancelPremium(userId: mongoose.Types.ObjectId): Promise<DocumentType<User> | null> {
   // Retrieve current user
-  const currentUser = await UserModel.findOne({ email })
-  if (currentUser == null) {
+  const user = await UserModel.findById(userId)
+  if (user == null) {
     throw new CustomError(400, errorNames.userNotFound)
   }
 
   // Find Stripe customer from user
-  const customer = await stripe.customers.retrieve(currentUser.customerId)
+  const customer = await stripe.customers.retrieve(user.stripeCustomerId)
   if (customer == null) {
     throw new CustomError(400, errorNames.customerNotFound)
   }
@@ -127,55 +106,43 @@ async function cancelPremium(email: string): Promise<DocumentType<User>> {
 
   // Save changes in database
   const now: number = Date.now()
-  const updatedUser = await UserModel.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        plan: 'free',
-        switchToPremiumDate: null,
-        lastCountResetDate: now,
-        searchesCount: 0,
-        profilesCount: 0,
-        creditCardLast4: null,
-      },
-    },
-    { new: true }
-  )
+  user.plan = Plan.FREE
+  user.switchedToPremiumAt = undefined
+  user.creditCardLast4 = undefined
 
   if (upperCaseEnv === 'PRODUCTION') {
     // Save changes in Hubspot in the background
-    updateHubspotContact(updatedUser)
+    updateHubspotContact(user)
   }
 
-  return updatedUser
+  return user
 }
 
-async function updateCreditCard(email: string, token: string): Promise<DocumentType<User>> {
+async function updateCreditCard(
+  userId: mongoose.Types.ObjectId,
+  token: string
+): Promise<DocumentType<User>> {
   // Find existing user in database
-  const user = await UserModel.findOne({ email })
-  if (user == null) {
+  const user = await UserModel.findById(userId)
+  if (!user) {
     throw new CustomError(400, errorNames.userNotFound)
   }
 
   // Find existing customer
-  const customer = await stripe.customers.retrieve(user.customerId)
+  const customer = await stripe.customers.retrieve(user.stripeCustomerId)
   if (customer == null) {
     throw new CustomError(400, errorNames.customerNotFound)
   }
 
   // Update customer with new card
-  const updatedCustomer = await stripe.customers.update(user.customerId, { source: token })
+  const updatedCustomer = await stripe.customers.update(user.stripeCustomerId, { source: token })
 
   // Save new card last 4 digits in database
-  return UserModel.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        creditCardLast4: (updatedCustomer.sources.data[0] as any).last4,
-      },
-    },
-    { new: true }
-  )
+  if (updatedCustomer && updatedCustomer.sources) {
+    user.creditCardLast4 = (updatedCustomer.sources.data[0] as any).last4
+    await user.save()
+  }
+  return user
 }
 
 export { createCustomer, switchToPremium, cancelPremium, updateCreditCard }

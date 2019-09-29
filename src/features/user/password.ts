@@ -1,14 +1,11 @@
 import * as crypto from 'crypto'
 import * as bcrypt from 'bcrypt'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { UserModel, User } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
 import { CreatorModel, Creator } from '../creator/model'
-import { getFullCreatorById } from '../creator'
 
-const upperCaseEnv = process.env.NODE_ENV.toUpperCase()
-const appURL = process.env[`APP_URL_${upperCaseEnv}`]
 const SALT_ROUNDS = 10
 
 async function sendResetPasswordEmail(email: string): Promise<void> {
@@ -23,12 +20,12 @@ async function sendResetPasswordEmail(email: string): Promise<void> {
   const token = crypto.randomBytes(20).toString('hex')
   if (maybeUser != null) {
     maybeUser.resetPasswordToken = token
-    maybeUser.resetPasswordExpires = Date.now() + 3600000
+    maybeUser.resetPasswordExpiresAt = new Date(Date.now() + 3600000)
     await maybeUser.save()
   }
   if (maybeCreator != null) {
     maybeCreator.resetPasswordToken = token
-    maybeCreator.resetPasswordExpires = Date.now() + 3600000
+    maybeCreator.resetPasswordExpiresAt = new Date(Date.now() + 3600000)
     await maybeCreator.save()
   }
 
@@ -41,7 +38,7 @@ async function sendResetPasswordEmail(email: string): Promise<void> {
         to: email,
       },
       locals: {
-        link: `${appURL}/resetPassword/${token}`,
+        link: `${process.env.APP_URL}/resetPassword/${token}`,
       },
     })
   } catch (error) {
@@ -58,67 +55,59 @@ async function resetPasswordViaEmail(token: string, newClearPassword: string): P
   // Check if token is valid
   const unknownEmail = maybeUser == null && maybeCreator == null
   const now = Date.now()
-  const expiredUser = maybeUser != null && maybeUser.resetPasswordExpires < now
-  const expiredCreator = maybeCreator != null && maybeCreator.resetPasswordExpires < now
+  const expiredUser =
+    maybeUser &&
+    maybeUser.resetPasswordExpiresAt &&
+    maybeUser.resetPasswordExpiresAt.getSeconds() < now
+  const expiredCreator =
+    maybeCreator &&
+    maybeCreator.resetPasswordExpiresAt &&
+    maybeCreator.resetPasswordExpiresAt.getTime() < now
   if (unknownEmail || expiredUser || expiredCreator) {
     // Handle errors
     throw new CustomError(400, errorNames.invalidLink)
   }
 
   // Token is valid, actually change password
-  const newPasswordHash = await bcrypt.hash(newClearPassword, SALT_ROUNDS)
+  const newpassword = await bcrypt.hash(newClearPassword, SALT_ROUNDS)
   if (maybeUser != null) {
-    maybeUser.passwordHash = newPasswordHash
-    maybeUser.resetPasswordToken = null
-    maybeUser.resetPasswordExpires = null
+    maybeUser.password = newpassword
+    maybeUser.resetPasswordToken = undefined
+    maybeUser.resetPasswordExpiresAt = undefined
     await maybeUser.save()
   } else if (maybeCreator != null) {
-    maybeCreator.passwordHash = newPasswordHash
-    maybeCreator.resetPasswordToken = null
-    maybeCreator.resetPasswordExpires = null
+    maybeCreator.password = newpassword
+    maybeCreator.resetPasswordToken = undefined
+    maybeCreator.resetPasswordExpiresAt = undefined
     await maybeCreator.save()
   }
 }
 
-interface IChangePasswordPayload {
-  email: string
+interface ChangeUserPasswordPayload {
+  userId: mongoose.Types.ObjectId
   currentPassword: string
   newPassword: string
 }
-interface IChangePasswordResponse {
-  user: DocumentType<User>
-  creator: DocumentType<Creator>
-}
 
-async function changeUserOrCreatorPassword(
-  newPasswordData: IChangePasswordPayload
-): Promise<IChangePasswordResponse> {
-  const { email, currentPassword, newPassword } = newPasswordData
-  const maybeUser = await UserModel.findOne({ email })
-  const maybeCreator = await CreatorModel.findOne({ email })
+async function changeUserPassword({
+  userId,
+  currentPassword,
+  newPassword,
+}: ChangeUserPasswordPayload): Promise<User> {
+  const user = await UserModel.findById(userId)
+  if (!user) {
+    throw new Error(errorNames.userNotFound)
+  }
   // Check current password
-  let isValidPassword = false
-  if (maybeUser != null) {
-    isValidPassword = await bcrypt.compare(currentPassword, maybeUser.passwordHash)
-  }
-  if (maybeCreator != null) {
-    isValidPassword = await bcrypt.compare(currentPassword, maybeCreator.passwordHash)
-  }
+  const isValidPassword = await bcrypt.compare(currentPassword, user.password)
   if (!isValidPassword) {
     throw new CustomError(400, errorNames.wrongPassword)
   }
   // Actually change password
-  const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS)
-  if (maybeUser != null) {
-    maybeUser.passwordHash = newPasswordHash
-    await maybeUser.save()
-  }
-  if (maybeCreator != null) {
-    maybeCreator.passwordHash = newPasswordHash
-    await maybeCreator.save()
-  }
-  const fullCreator = maybeCreator == null ? null : await getFullCreatorById(maybeCreator._id)
-  return { user: maybeUser, creator: fullCreator }
+  const newPasswordHashed = await bcrypt.hash(newPassword, SALT_ROUNDS)
+  user.password = newPasswordHashed
+  await user.save()
+  return user
 }
 
-export { changeUserOrCreatorPassword, resetPasswordViaEmail, sendResetPasswordEmail }
+export { changeUserPassword, resetPasswordViaEmail, sendResetPasswordEmail }

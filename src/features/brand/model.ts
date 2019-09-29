@@ -1,31 +1,35 @@
 import * as mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp } from '@hasezoey/typegoose'
+import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
+import { Field, ID, ObjectType } from 'type-graphql'
 import { User } from '../user/model'
 
+@ObjectType({ description: 'A brand may be a game publisher, has User members' })
+@modelOptions({ schemaOptions: { timestamps: true } })
 class Brand {
-  @prop()
-  username: string // @chanelofficial
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
 
+  @Field()
   @prop()
-  name: string // CHANEL
+  name: string
 
-  @prop()
-  category: string
-
-  @prop()
-  subCategory: string
-
+  @Field({ description: 'Cloudinary URL of brand logo' })
   @prop()
   logo: string
 
+  @Field({ description: "URL of the brand's website" })
   @prop()
-  isSignedUp: boolean
+  website: string
 
-  @prop()
-  link: string
-
+  @Field(() => [User], { description: 'All the users that work for the brand' })
   @arrayProp({ itemsRef: 'User' })
   users: Ref<User>[]
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
 }
 
 const BrandModel = getModelForClass(Brand)

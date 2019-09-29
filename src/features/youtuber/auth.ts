@@ -3,7 +3,6 @@ import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator, CreatorModel } from '../creator/model'
 import { uploadToCloudinary } from '../../utils/pictures'
-import { getFullCreatorById } from '../creator'
 import { IChannelReport, RawYoutubeMetric, Youtuber, YoutuberModel, YoutubeVideo } from './model'
 import { getAudienceFromReport } from './audience'
 
@@ -51,10 +50,8 @@ async function linkYoutubeChannel(
   ) {
     throw new CustomError(400, errorNames.notEnoughFollowers)
   }
-  await attachYoutuberToCreator(creator, youtuber, googleData)
-  // Return populated creator without sensitive data
-  const fullCreator = await getFullCreatorById(creatorId)
-  return fullCreator
+  const updatedCreator = await attachYoutuberToCreator(creator, youtuber, googleData)
+  return updatedCreator
 }
 
 async function checkGoogleToken(code: string): Promise<IGoogleData> {
@@ -62,11 +59,17 @@ async function checkGoogleToken(code: string): Promise<IGoogleData> {
   try {
     const { tokens } = await oauth.getToken(code)
     oauth.setCredentials(tokens)
+    if (!tokens.access_token || !tokens.refresh_token || !tokens.id_token) {
+      throw new Error(errorNames.invalidToken)
+    }
     const ticket = await oauth.verifyIdToken({
       idToken: tokens.id_token,
       audience: CLIENT_ID,
     })
     const payload = ticket.getPayload()
+    if (!payload || !payload.name || !payload.picture) {
+      throw new Error(errorNames.invalidPayload)
+    }
     return {
       name: payload.name,
       picture: payload.picture,
@@ -115,7 +118,11 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
   const rawResponses = await Promise.all([agePromise, genderPromise, countryPromise])
 
   // Parse basic channel data
-  const channel = channelsList.data.items[0]
+  const channel =
+    channelsList && channelsList.data && channelsList.data.items && channelsList.data.items[0]
+  if (!channel || !channel.statistics || !channel.snippet || !channel.contentDetails) {
+    throw new Error(errorNames.invalidPayload)
+  }
   // channel.contentDetails.relatedPlaylists.uploads
   const { subscriberCount, videoCount, viewCount } = channel.statistics
   // Parse audience analytics data
@@ -128,15 +135,22 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     audienceAge: age,
     audienceGender: gender,
     audienceCountry: country,
-    viewCount: parseInt(viewCount),
-    subscriberCount: parseInt(subscriberCount),
-    videoCount: parseInt(videoCount),
-    channelId: channel.id,
-    name: channel.snippet.title,
-    thumbnail: channel.snippet.thumbnails.default.url,
-    country: channel.snippet.country,
-    language: channel.snippet.defaultLanguage,
-    uploadsPlaylistId: channel.contentDetails.relatedPlaylists.uploads,
+    viewCount: parseInt(viewCount as string),
+    subscriberCount: parseInt(subscriberCount as string),
+    videoCount: parseInt(videoCount as string),
+    channelId: channel.id as string,
+    name: channel.snippet.title as string,
+    thumbnail:
+      (channel.snippet.thumbnails &&
+        channel.snippet.thumbnails.default &&
+        (channel.snippet.thumbnails.default.url as string)) ||
+      '',
+    country: channel.snippet.country as string,
+    language: channel.snippet.defaultLanguage as string,
+    uploadsPlaylistId:
+      (channel.contentDetails.relatedPlaylists &&
+        (channel.contentDetails.relatedPlaylists.uploads as string)) ||
+      '',
     url:
       channel.snippet.customUrl == null
         ? `https://www.youtube.com/channel/${channel.id}`
@@ -150,16 +164,21 @@ async function getChannelVideos(uploadsPlaylistId: string): Promise<YoutubeVideo
     playlistId: uploadsPlaylistId,
     part: 'snippet',
   })
-  const rawVideos = response.data.items.map(_video => ({
-    title: _video.snippet.title,
-    thumbnail: _video.snippet.thumbnails.high.url,
-    videoId: _video.snippet.resourceId.videoId,
-    url: `https://www.youtube.com/watch?v=${_video.snippet.resourceId.videoId}`,
-    viewCount: null,
-    commentCount: null,
-    likeCount: null,
-    publishedDate: null,
-  }))
+  const rawVideos =
+    response.data &&
+    response.data.items &&
+    response.data.items
+      .filter(_video => !!_video && !!_video.snippet && !!_video.snippet.resourceId)
+      .map(_video => ({
+        title: _video.snippet.title,
+        thumbnail: _video.snippet.thumbnails.high.url,
+        videoId: _video.snippet.resourceId.videoId,
+        url: `https://www.youtube.com/watch?v=${_video.snippet.resourceId.videoId}`,
+        viewCount: null,
+        commentCount: null,
+        likeCount: null,
+        publishedAt: null,
+      }))
   return rawVideos
 }
 
@@ -178,21 +197,17 @@ async function createYoutuberFromReport(
     url,
     uploadsPlaylistId,
   } = report
-  const youtuberDraft: Youtuber = {
+  const youtuberDraft: Partial<Youtuber> = {
     name,
     channelId,
     viewCount,
     videoCount,
     subscriberCount,
     picture: report.thumbnail,
-    country,
-    language,
     url,
     videos,
     uploadsPlaylistId,
     audience: getAudienceFromReport(report),
-    lastScrapingDate: Date.now(),
-    creationDate: Date.now(),
   }
 
   // Use upsert so we can overwrite an existing youtuber

@@ -1,70 +1,66 @@
 import * as mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp } from '@hasezoey/typegoose'
+import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
+import { registerEnumType, ObjectType, Field, ID } from 'type-graphql'
 import { Campaign } from '../campaign/model'
-import { CreatorModel, Creator, PostalAddress } from '../creator/model'
+import { CreatorModel, Creator } from '../creator/model'
 import { Review, ReviewFormat } from '../review/model'
 import { ConversationModel, Conversation } from '../conversation/model'
 
-enum DashboardAction {
-  accept = 'accept',
-  refuse = 'refuse',
-  markAsSent = 'markAsSent',
-}
-
-class CollabProposition extends PostalAddress {
-  @arrayProp({ enum: ReviewFormat, items: String })
-  formats: ReviewFormat[]
-
-  @prop()
-  message: string
+enum ReviewCollabDecision {
+  ACCEPT = 'accept',
+  REFUSE = 'refuse',
+  MARK_AS_SENT = 'markAsSent',
 }
 
 enum CollabStatus {
-  proposed = 'proposed',
-  accepted = 'accepted',
-  sent = 'sent',
-  refused = 'refused',
-  done = 'done',
+  APPLIED = 'applied',
+  ACCEPTED = 'accepted',
+  SENT = 'sent',
+  DENIED = 'denied',
+  DONE = 'done',
 }
+registerEnumType(CollabStatus, {
+  name: 'CollabStatus',
+  description: 'The advancement of the campaign',
+})
 
+@ObjectType({
+  description: 'A collab is a partnership between a creator and a brand to work on a campaign',
+})
+@modelOptions({ schemaOptions: { timestamps: true } })
 class Collab {
+  @Field(type => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
+  @Field(() => CollabStatus, { description: 'Advancement of the collab' })
   @prop({ enum: CollabStatus, type: String })
   status: CollabStatus
 
+  @Field(() => Creator, { description: 'The creator working on the collab' })
   @prop({ ref: Creator })
   creator: Ref<Creator>
 
+  @Field(() => Campaign, { description: 'The campaign the collab is a part of' })
   @prop({ ref: Campaign })
   campaign: Ref<Campaign>
 
+  @Field({ description: "The creator's motivation message for the brand" })
   @prop()
-  deadline: number // Timestamp
-
-  @prop({ _id: false })
-  proposition: CollabProposition
-
-  @prop({ default: Date.now })
-  creationDate: number
-
-  @prop()
-  acceptedDate?: number
-
-  @prop()
-  refusedDate?: number
-
-  @prop()
-  sentDate?: number
-
-  @prop()
-  doneDate?: number
+  message: string
 
   @arrayProp({ itemsRef: Review })
   reviews: Ref<Review>[]
 
   @prop({ ref: Conversation })
   conversation: Ref<Conversation>
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
 }
 
 const CollabModel = getModelForClass(Collab)
 
-export { DashboardAction, CollabProposition, CollabStatus, Collab, CollabModel }
+export { ReviewCollabDecision, CollabStatus, Collab, CollabModel }

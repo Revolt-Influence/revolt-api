@@ -1,10 +1,11 @@
-import { DocumentType, Ref, mongoose } from '@hasezoey/typegoose'
-import { Conversation, ConversationModel, MessageModel, Message } from './model'
-import { CustomError, errorNames } from '../../utils/errors'
-import { UserModel, User } from '../user/model'
-import { BrandModel, Brand } from '../brand/model'
-import { Creator, CreatorModel } from '../creator/model'
+import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { emailService } from '../../utils/emails'
+import { CustomError, errorNames } from '../../utils/errors'
+import { Brand, BrandModel } from '../brand/model'
+import { Creator, CreatorModel } from '../creator/model'
+import { User } from '../user/model'
+import { Conversation, ConversationModel, Message, MessageModel } from './model'
+import { PaginatedConversationResponse } from './resolver'
 
 const CONVERSATIONS_PER_PAGE = 20
 
@@ -12,12 +13,11 @@ async function createConversation(
   creatorId: mongoose.Types.ObjectId,
   brandId: mongoose.Types.ObjectId
 ): Promise<DocumentType<Conversation>> {
-  const conversationDraft: Conversation = {
+  const conversationDraft: Partial<Conversation> = {
     creator: creatorId,
     brand: brandId,
     messages: [],
     messagesCount: 0,
-    creationDate: Date.now(),
     isArchived: false,
   }
   const conversation = new ConversationModel(conversationDraft)
@@ -54,14 +54,13 @@ async function sendMessage({
   }
 
   // Prepare and save message
-  const messageDraft: Message = {
+  const messageDraft: Partial<Message> = {
     conversation: conversationId,
     text,
     // Find the author
     creatorAuthor: creatorAuthorId,
     brandAuthor: brandAuthorId,
     isAdminAuthor: isAdminAuthor || false,
-    sentAt: Date.now(),
   }
   const message = new MessageModel(messageDraft)
   await message.save()
@@ -178,7 +177,6 @@ async function getOrCreateConversationByParticipants(
   const newConversation = new ConversationModel({
     creator: creatorId,
     brand: brandId,
-    creationDate: Date.now(),
   } as Conversation)
   await newConversation.save()
   return newConversation
@@ -194,23 +192,15 @@ async function getFullConversation(conversationId: string): Promise<DocumentType
   return conversation
 }
 
-interface PaginatedConversations {
-  conversations: DocumentType<Conversation>[]
-  totalPages: number
-  currentPage: number
-}
-
 async function getConversationsPage(
   query: Partial<DocumentType<Conversation>>,
-  page: number,
-  populateFields: string
-): Promise<PaginatedConversations> {
+  page: number
+): Promise<PaginatedConversationResponse> {
   const fullQuery = { ...query, isArchived: false }
   // Make sure page 0 doesn't exist
   const safePage = page < 1 ? 1 : page
   // Get just the conversations data we need
   const conversationsPromise = ConversationModel.find(fullQuery)
-    .populate(populateFields)
     .skip((safePage - 1) * CONVERSATIONS_PER_PAGE)
     .limit(CONVERSATIONS_PER_PAGE)
     .exec()
@@ -225,36 +215,31 @@ async function getConversationsPage(
   return {
     currentPage: safePage,
     totalPages: Math.ceil(conversationsCount / CONVERSATIONS_PER_PAGE),
-    conversations,
+    items: conversations,
   }
 }
 
 async function getCreatorConversations(
-  creatorId: string,
+  creatorId: mongoose.Types.ObjectId,
   page: number
-): Promise<PaginatedConversations> {
-  return getConversationsPage(
-    { creator: mongoose.Types.ObjectId(creatorId) },
-    page,
-    'messages brand messagesCount'
-  )
+): Promise<PaginatedConversationResponse> {
+  return getConversationsPage({ creator: creatorId }, page)
 }
 
-async function getUserConversations(userId: string, page: number): Promise<PaginatedConversations> {
+async function getUserConversations(
+  userId: mongoose.Types.ObjectId,
+  page: number
+): Promise<PaginatedConversationResponse> {
   // Get IDs of user brands
   const userBrands = await BrandModel.find({ users: userId }).select('_id')
   const userBrandsIds = userBrands.map(_userBrand => _userBrand._id)
   // Get conversations page
-  return getConversationsPage(
-    { brand: { $in: userBrandsIds } as any },
-    page,
-    'messages creator messagesCount'
-  )
+  return getConversationsPage({ brand: { $in: userBrandsIds } as any }, page)
 }
 
-async function getAdminConversations(page: number): Promise<PaginatedConversations> {
+async function getAdminConversations(page: number): Promise<PaginatedConversationResponse> {
   // Get all the conversations
-  return getConversationsPage({}, page, 'messages brand creator messagesCount')
+  return getConversationsPage({}, page)
 }
 
 export {
