@@ -27,10 +27,6 @@ class User {
   @prop()
   switchedToPremiumAt?: Date
 
-  @Field({ description: 'Phone number is used for demo, customer support and conflicts' })
-  @prop()
-  phone: string
-
   @prop()
   password: string
 

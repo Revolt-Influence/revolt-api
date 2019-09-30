@@ -46,10 +46,6 @@ class Creator {
   @prop({ lowercase: true, trim: true, unique: true })
   email: string
 
-  @Field({ description: 'Used in case of problems, not accessible to brands' })
-  @prop()
-  phone: string
-
   @Field({ description: 'Cloudinary URL of a picture got from user upload or a social network' })
   @prop()
   picture: string
@@ -57,10 +53,6 @@ class Creator {
   @Field({ description: 'Creator-defined named, can be a full name or a pseudo' })
   @prop()
   name: string // display name
-
-  @Field(() => Gender, { description: 'Male, female or other' })
-  @prop({ enum: Gender })
-  gender: Gender
 
   @Field({ description: 'Where the creator comes from' })
   @prop()

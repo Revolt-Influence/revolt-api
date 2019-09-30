@@ -30,7 +30,7 @@ class Conversation {
   @Field(() => [Message], { description: 'Conversation messages from old to new' })
   @arrayProp({
     itemsRef: 'Message',
-    ref: 'Message', // Shouldn't be here
+    ref: 'Message',
     localField: '_id',
     foreignField: 'conversation',
     justOne: false,

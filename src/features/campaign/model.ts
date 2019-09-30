@@ -5,6 +5,7 @@ import { Gender, AgeGroup } from '../creator/model'
 import { BrandModel, Brand } from '../brand/model'
 import { ReviewFormat } from '../review/model'
 import { User } from '../user/model'
+import { Collab } from '../collab/model'
 
 @ObjectType({ description: 'What a creator can receive' })
 @InputType('CampaignProductInput')
@@ -47,7 +48,9 @@ class TargetAudience {
 }
 
 @ObjectType({ description: 'A campaign is made by brands to find collabs to promote a product' })
-@modelOptions({ schemaOptions: { timestamps: true } })
+@modelOptions({
+  schemaOptions: { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
+})
 class Campaign {
   @Field(type => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
@@ -87,6 +90,16 @@ class Campaign {
   @Field({ description: 'Whether an admin allowed the campaign to be published' })
   @prop({ default: false })
   isReviewed: boolean
+
+  @Field(() => [Collab], { description: 'All collabs linked to the campaign' })
+  @arrayProp({
+    itemsRef: 'Collab',
+    ref: 'Collab',
+    localField: '_id',
+    foreignField: 'campaign',
+    justOne: false,
+  })
+  collabs: Ref<Collab>[]
 
   @Field(() => Date)
   createdAt: Readonly<Date>

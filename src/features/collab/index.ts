@@ -123,32 +123,12 @@ async function reviewCollab(
     // Should not happen, but added just in case
   }
 
-  const updatedCollab = await collab.save()
-  const populatedUpdatedCollab = await CollabModel.findById(updatedCollab._id).populate({
-    path: 'creator',
-    select: 'email phone birthday gender country name picture',
-    populate: [
-      {
-        path: 'youtube',
-      },
-    ],
-  })
-  return populatedUpdatedCollab
+  await collab.save()
+  return collab
 }
 
 async function getCampaignCollabs(campaignId: string): Promise<DocumentType<Collab>[]> {
-  const collabs = await CollabModel.find({ campaign: campaignId }).populate([
-    {
-      path: 'creator',
-      select: 'email phone birthday gender country name picture',
-      populate: [
-        {
-          path: 'youtube',
-        },
-      ],
-    },
-    { path: 'reviews' },
-  ])
+  const collabs = await CollabModel.find({ campaign: campaignId })
   return collabs
 }
 
@@ -156,7 +136,6 @@ async function getCreatorCollabs(creatorId: string): Promise<DocumentType<Collab
   const collabs = await CollabModel.find({ creator: creatorId })
     .where('status')
     .ne('refused')
-    .populate('reviews')
   return collabs
 }
 

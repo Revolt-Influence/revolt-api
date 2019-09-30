@@ -11,6 +11,10 @@ enum ReviewCollabDecision {
   REFUSE = 'refuse',
   MARK_AS_SENT = 'markAsSent',
 }
+registerEnumType(ReviewCollabDecision, {
+  name: 'ReviewCollabDecision',
+  description: 'Whether a brand accepts a collab',
+})
 
 enum CollabStatus {
   APPLIED = 'applied',
@@ -48,9 +52,11 @@ class Collab {
   @prop()
   message: string
 
+  @Field(() => [Review], { description: 'Social media posts made for the campaign' })
   @arrayProp({ itemsRef: Review })
   reviews: Ref<Review>[]
 
+  @Field(() => Conversation, { description: 'Conv where collab brand and creator can chat' })
   @prop({ ref: Conversation })
   conversation: Ref<Conversation>
 

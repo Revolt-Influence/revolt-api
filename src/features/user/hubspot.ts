@@ -47,10 +47,6 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
       value: user.plan === 'premium',
     },
     {
-      property: 'phone',
-      value: user.phone,
-    },
-    {
       property: 'company',
       value: user.company == null ? '' : user.company,
     },

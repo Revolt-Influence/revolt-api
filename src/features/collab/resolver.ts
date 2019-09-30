@@ -12,7 +12,7 @@ import { applyToExperience } from '../creator/experiences'
 import { Review, ReviewFormat } from '../review/model'
 
 @InputType()
-class CollabReviewInput implements Partial<Review> {
+class SubmitCollabReviewInput implements Partial<Review> {
   @Field()
   link: string
 
@@ -41,7 +41,9 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'Brand user accepts or denies a collab application' })
   async reviewCollabApplication(
     @Arg('collabId') collabId: string,
-    @Arg('decision', { description: 'Whether the brand accepts or refuses the campaign' })
+    @Arg('decision', () => ReviewCollabDecision, {
+      description: 'Whether the brand accepts or refuses the campaign',
+    })
     decision: ReviewCollabDecision
   ): Promise<Collab> {
     const updatedCollab = await reviewCollab(mongoose.Types.ObjectId(collabId), decision)
@@ -52,7 +54,7 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'End a collab by submitting the sponsored content' })
   async submitCollabReview(
     @Arg('collabId') collabId: string,
-    @Arg('reviews', () => [CollabReviewInput]) reviews: CollabReviewInput[],
+    @Arg('reviews', () => [SubmitCollabReviewInput]) reviews: SubmitCollabReviewInput[],
     @Ctx() ctx: MyContext
   ): Promise<Collab> {
     // Enrich and save reviews
@@ -68,4 +70,4 @@ class CollabResolver {
   }
 }
 
-export { CollabResolver }
+export { CollabResolver, SubmitCollabReviewInput }

@@ -6,7 +6,7 @@ import {
   getCreatorsPage,
   saveCreatorProfile,
   setCreatorStatus,
-  updateCreatorContactInfo,
+  updateCreatorEmail,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
@@ -27,13 +27,7 @@ class SignupCreatorInput {
   password: string
 
   @Field()
-  phone: string
-
-  @Field()
   birthYear: number
-
-  @Field(() => Gender)
-  gender: Gender
 
   @Field()
   country: string
@@ -95,17 +89,12 @@ class CreatorResolver {
   }
 
   @Authorized(AuthRole.CREATOR)
-  @Mutation(() => Creator, { description: 'Change creator email and/or phone' })
-  async updateCreatorContactInfo(
+  @Mutation(() => Creator, { description: 'Change creator email' })
+  async updateCreatorEmail(
     @Arg('newEmail') newEmail: string,
-    @Arg('newPhone') newPhone: string,
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
-    const updatedCreator = await updateCreatorContactInfo(
-      ctx.state.user.creator._id,
-      newEmail,
-      newPhone
-    )
+    const updatedCreator = await updateCreatorEmail(ctx.state.user.creator._id, newEmail)
     return updatedCreator
   }
 

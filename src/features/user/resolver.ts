@@ -3,7 +3,7 @@ import { mongoose } from '@hasezoey/typegoose'
 import { User, UserModel, Plan } from './model'
 import { Creator } from '../creator/model'
 import { Session, createDefaultSession, SessionType, MyContext } from '../session/model'
-import { createUser, updateUserContactInfo } from '.'
+import { createUser, updateUserEmail } from '.'
 import { changeUserPassword } from './password'
 import { AuthRole } from '../../middleware/auth'
 import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
@@ -12,9 +12,6 @@ import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
 class SignupUserInput {
   @Field({ description: 'Used for login and notification and marketing emails' })
   email: string
-
-  @Field({ description: 'Phone number is used for demo, customer support and conflicts' })
-  phone: string
 
   @Field({ description: 'The password in plaintext, hashed on server' })
   password: string
@@ -76,13 +73,9 @@ class UserResolver {
   }
 
   @Authorized(AuthRole.USER)
-  @Mutation(() => User, { description: 'Change user email and/or phone' })
-  async updateUserContactInfo(
-    @Arg('newEmail') newEmail: string,
-    @Arg('newPhone') newPhone: string,
-    @Ctx() ctx: MyContext
-  ): Promise<User> {
-    const updatedUser = await updateUserContactInfo(ctx.state.user.user._id, newEmail, newPhone)
+  @Mutation(() => User, { description: 'Change user email' })
+  async updateUserEmail(@Arg('newEmail') newEmail: string, @Ctx() ctx: MyContext): Promise<User> {
+    const updatedUser = await updateUserEmail(ctx.state.user.user._id, newEmail)
     return updatedUser
   }
 

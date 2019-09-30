@@ -103,13 +103,12 @@ async function saveCreatorProfile(
   return creator
 }
 
-async function updateCreatorContactInfo(
+async function updateCreatorEmail(
   creatorId: mongoose.Types.ObjectId,
-  email: string,
-  phone: string
+  email: string
 ): Promise<DocumentType<Creator>> {
   // Check if there is payload
-  if (email == null || phone == null) {
+  if (email == null) {
     throw new CustomError(400, errorNames.invalidPayload)
   }
   // Check if email is available
@@ -122,7 +121,6 @@ async function updateCreatorContactInfo(
   // Find and update creator
   const creator = await CreatorModel.findById(creatorId)
   creator.email = email
-  creator.phone = phone
   await creator.save()
   return creator
 }
@@ -218,7 +216,7 @@ async function changeCreatorPassword({
 export {
   createCreator,
   saveCreatorProfile,
-  updateCreatorContactInfo,
+  updateCreatorEmail,
   getCreatorsPage,
   setCreatorStatus,
   getAmbassadorStatus,
