@@ -3,7 +3,7 @@ import { Context } from 'koa'
 import { Resolver, Mutation, Authorized, Arg, Ctx, InputType, Field, Query } from 'type-graphql'
 import { mongoose } from '@hasezoey/typegoose'
 import { errorNames } from '../../utils/errors'
-import { getCollabById, reviewCollab } from '.'
+import { getCollabById, reviewCollab, getCreatorCollabs } from '.'
 import { submitCreatorReview, BaseReview, enrichReview } from '../review'
 import { Collab, ReviewCollabDecision, CollabModel } from './model'
 import { AuthRole } from '../../middleware/auth'
@@ -29,10 +29,10 @@ class CollabResolver {
     return collab
   }
 
-  @Authorized(AuthRole.ADMIN)
-  @Query(() => [Collab], { description: 'Get list of all collabs (admin only)' })
-  async collabs(): Promise<Collab[]> {
-    const collabs = await CollabModel.find()
+  @Authorized(AuthRole.CREATOR)
+  @Query(() => [Collab], { description: 'Get list of creator collabs' })
+  async collabs(@Ctx() ctx: MyContext): Promise<Collab[]> {
+    const collabs = await getCreatorCollabs(ctx.state.user.creator._id)
     return collabs
   }
 

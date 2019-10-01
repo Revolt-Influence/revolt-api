@@ -116,7 +116,7 @@ class UserResolver {
   @Mutation(() => String, {
     description: 'Send reset password link by email if creator or user forgot password',
   })
-  async sendResetPasswordLink(@Arg('email') email: string): Promise<string> {
+  async sendResetPasswordEmail(@Arg('email') email: string): Promise<string> {
     await sendResetPasswordEmail(email)
     return 'Email sent'
   }

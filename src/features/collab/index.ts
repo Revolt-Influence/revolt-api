@@ -127,12 +127,16 @@ async function reviewCollab(
   return collab
 }
 
-async function getCampaignCollabs(campaignId: string): Promise<DocumentType<Collab>[]> {
+async function getCampaignCollabs(
+  campaignId: mongoose.Types.ObjectId
+): Promise<DocumentType<Collab>[]> {
   const collabs = await CollabModel.find({ campaign: campaignId })
   return collabs
 }
 
-async function getCreatorCollabs(creatorId: string): Promise<DocumentType<Collab>[]> {
+async function getCreatorCollabs(
+  creatorId: mongoose.Types.ObjectId
+): Promise<DocumentType<Collab>[]> {
   const collabs = await CollabModel.find({ creator: creatorId })
     .where('status')
     .ne('refused')
