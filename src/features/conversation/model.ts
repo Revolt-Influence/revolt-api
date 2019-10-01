@@ -1,9 +1,8 @@
+import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
-import { prop, Ref, modelOptions, getModelForClass, arrayProp } from '@hasezoey/typegoose'
 import { Field, ID, ObjectType } from 'type-graphql'
-import { UserModel } from '../user/model'
-import { Creator } from '../creator/model'
 import { Brand } from '../brand/model'
+import { Creator } from '../creator/model'
 
 @ObjectType({
   description: 'Conversation between a brand, a creator and Revolt. Linked to one ore more collabs',
@@ -12,7 +11,7 @@ import { Brand } from '../brand/model'
   schemaOptions: { toJSON: { virtuals: true }, toObject: { virtuals: true }, timestamps: true },
 })
 class Conversation {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field(() => Brand, { description: 'Brand that talks to a creator' })
@@ -59,7 +58,7 @@ const ConversationModel = getModelForClass(Conversation)
 
 @ObjectType({ description: 'A message is part of a conversation' })
 class Message {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field({ description: 'The content of the message' })

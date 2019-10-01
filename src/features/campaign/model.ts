@@ -1,11 +1,15 @@
+import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { Field, registerEnumType, ObjectType, ID, InputType } from 'type-graphql'
-import { Gender, AgeGroup } from '../creator/model'
-import { BrandModel, Brand } from '../brand/model'
-import { ReviewFormat } from '../review/model'
-import { User } from '../user/model'
+import { loadType } from 'mongoose-float'
+import { Authorized, Field, ID, InputType, ObjectType } from 'type-graphql'
+import { AuthRole } from '../../middleware/auth'
+import { Brand } from '../brand/model'
 import { Collab } from '../collab/model'
+import { AgeGroup, Gender } from '../creator/model'
+import { Review } from '../review/model'
+import { User } from '../user/model'
+
+const Float = loadType(mongoose, 4)
 
 @ObjectType({ description: 'What a creator can receive' })
 @InputType('CampaignProductInput')
@@ -52,7 +56,7 @@ class TargetAudience {
   schemaOptions: { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 })
 class Campaign {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field({ description: 'The campaign name that is promoted to the creators' })
@@ -83,6 +87,10 @@ class Campaign {
   @arrayProp({ items: String })
   rules: string[]
 
+  @Field({ description: 'Total amount of money that will be given to creators' })
+  @prop(() => Float)
+  estimatedBudget: number
+
   @Field({ description: 'Whether the brand is willing to publish the campaign' })
   @prop({ default: true })
   isArchived: boolean // whether the brand removed it
@@ -91,6 +99,7 @@ class Campaign {
   @prop({ default: false })
   isReviewed: boolean
 
+  @Authorized(AuthRole.USER)
   @Field(() => [Collab], { description: 'All collabs linked to the campaign' })
   @arrayProp({
     itemsRef: 'Collab',
@@ -100,6 +109,17 @@ class Campaign {
     justOne: false,
   })
   collabs: Ref<Collab>[]
+
+  @Authorized(AuthRole.USER)
+  @Field(() => [Review], { description: 'All collabs linked to the campaign' })
+  @arrayProp({
+    itemsRef: 'Review',
+    ref: 'Review',
+    localField: '_id',
+    foreignField: 'campaign',
+    justOne: false,
+  })
+  reviews: Ref<Review>[]
 
   @Field(() => Date)
   createdAt: Readonly<Date>

@@ -4,7 +4,7 @@ import { User, UserModel, Plan } from './model'
 import { Creator } from '../creator/model'
 import { Session, createDefaultSession, SessionType, MyContext } from '../session/model'
 import { createUser, updateUserEmail } from '.'
-import { changeUserPassword } from './password'
+import { changeUserPassword, sendResetPasswordEmail, resetPasswordViaEmail } from './password'
 import { AuthRole } from '../../middleware/auth'
 import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
 
@@ -111,6 +111,23 @@ class UserResolver {
   ): Promise<User> {
     const updatedUser = await updateCreditCard(ctx.state.user.user._id, newPaymentToken)
     return updatedUser
+  }
+
+  @Mutation(() => String, {
+    description: 'Send reset password link by email if creator or user forgot password',
+  })
+  async sendResetPasswordLink(@Arg('email') email: string): Promise<string> {
+    await sendResetPasswordEmail(email)
+    return 'Email sent'
+  }
+
+  @Mutation(() => String, { description: 'Reset password from forgot password email link' })
+  async resetPasswordViaEmail(
+    @Arg('token') token: string,
+    @Arg('newPassword') newPassword: string
+  ): Promise<string> {
+    await resetPasswordViaEmail(token, newPassword)
+    return 'Password changed'
   }
 }
 

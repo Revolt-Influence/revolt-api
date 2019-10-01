@@ -13,7 +13,7 @@ import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { createDefaultSession, MyContext, Session, SessionType } from '../session/model'
 import { User } from '../user/model'
 import { linkYoutubeChannel } from '../youtuber'
-import { Creator, CreatorModel, CreatorStatus, Gender } from './model'
+import { Creator, CreatorModel, CreatorStatus } from './model'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -134,7 +134,7 @@ class CreatorResolver {
 
   @Authorized(AuthRole.CREATOR)
   @Mutation(() => User, { description: 'Change creator password' })
-  async changeUserPassword(
+  async changeCreatorPassword(
     @Arg('currentPassword') currentPassword: string,
     @Arg('newPassword') newPassword: string,
     @Ctx() ctx: MyContext

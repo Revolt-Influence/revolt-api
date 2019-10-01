@@ -1,7 +1,7 @@
+import { arrayProp, getModelForClass, modelOptions, prop } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
-import { prop, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
 import { loadType } from 'mongoose-float'
-import { Field, ObjectType, ID } from 'type-graphql'
+import { Field, ID, ObjectType } from 'type-graphql'
 
 const Float = loadType(mongoose, 4)
 
@@ -96,7 +96,7 @@ class YoutubeAudience {
 @ObjectType()
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Youtuber {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field({ description: 'Channel title' })

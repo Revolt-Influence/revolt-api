@@ -1,7 +1,7 @@
+import { getModelForClass, prop, Ref } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
-import { prop, Ref, getModelForClass } from '@hasezoey/typegoose'
-import { registerEnumType, ObjectType, Field, ID } from 'type-graphql'
-import { YoutuberModel, Youtuber } from '../youtuber/model'
+import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
+import { Youtuber } from '../youtuber/model'
 
 enum CreatorStatus {
   UNVERIFIED = 'unverified',
@@ -39,7 +39,7 @@ registerEnumType(AgeGroup, {
 
 @ObjectType({ description: 'Someone who creates content and has a community' })
 class Creator {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field({ description: 'The email is used for login and notifications' })

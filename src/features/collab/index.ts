@@ -42,7 +42,7 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
   })
 }
 
-async function notifyCollabRefused(collab: DocumentType<Collab>): Promise<void> {
+async function notifyCollabDenied(collab: DocumentType<Collab>): Promise<void> {
   const campaign = await getCampaignById(collab.campaign as mongoose.Types.ObjectId)
   await emailService.send({
     template: 'collabRefused',
@@ -79,7 +79,7 @@ async function reviewCollab(
   // Act based on the brand's decision
   const now = Date.now()
   switch (action) {
-    case 'accept':
+    case ReviewCollabDecision.ACCEPT:
       // Send an email to the creator in the background
       notifyCollabAccepted(collab)
       // Send message in the background
@@ -92,9 +92,9 @@ async function reviewCollab(
       // Mark as accepted
       collab.status = CollabStatus.ACCEPTED
       break
-    case 'refuse':
+    case ReviewCollabDecision.DENY:
       // Send an email to the creator in the background
-      notifyCollabRefused(collab)
+      notifyCollabDenied(collab)
       // Archive the conversation
       const conversation = await ConversationModel.findById(collab.conversation)
       conversation.isArchived = true
@@ -108,7 +108,7 @@ async function reviewCollab(
       })
       collab.status = CollabStatus.DENIED
       break
-    case 'markAsSent':
+    case ReviewCollabDecision.MARK_AS_SENT:
       collab.status = CollabStatus.SENT
       // Send message in the background
       sendMessage({

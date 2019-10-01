@@ -1,11 +1,11 @@
 import Router from 'koa-router'
 import { Context } from 'koa'
-import { Resolver, Mutation, Authorized, Arg, Ctx, InputType, Field } from 'type-graphql'
+import { Resolver, Mutation, Authorized, Arg, Ctx, InputType, Field, Query } from 'type-graphql'
 import { mongoose } from '@hasezoey/typegoose'
 import { errorNames } from '../../utils/errors'
 import { getCollabById, reviewCollab } from '.'
-import { submitCreatorReviews, BaseReview, enrichAllReviews } from '../review'
-import { Collab, ReviewCollabDecision } from './model'
+import { submitCreatorReview, BaseReview, enrichReview } from '../review'
+import { Collab, ReviewCollabDecision, CollabModel } from './model'
 import { AuthRole } from '../../middleware/auth'
 import { MyContext } from '../session/model'
 import { applyToExperience } from '../creator/experiences'
@@ -16,12 +16,26 @@ class SubmitCollabReviewInput implements Partial<Review> {
   @Field()
   link: string
 
-  @Field()
+  @Field(() => ReviewFormat, { description: 'What platform the review is posted on' })
   format: ReviewFormat
 }
 
 @Resolver()
 class CollabResolver {
+  @Authorized()
+  @Query(() => Collab, { description: 'Get collab by ID' })
+  async collab(@Arg('collabId') collabId: string): Promise<Collab> {
+    const collab = await CollabModel.findById(collabId)
+    return collab
+  }
+
+  @Authorized(AuthRole.ADMIN)
+  @Query(() => [Collab], { description: 'Get list of all collabs (admin only)' })
+  async collabs(): Promise<Collab[]> {
+    const collabs = await CollabModel.find()
+    return collabs
+  }
+
   @Authorized(AuthRole.CREATOR)
   @Mutation(() => Collab, { description: 'Creates a collab' })
   async applyToExperience(
@@ -54,18 +68,16 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'End a collab by submitting the sponsored content' })
   async submitCollabReview(
     @Arg('collabId') collabId: string,
-    @Arg('reviews', () => [SubmitCollabReviewInput]) reviews: SubmitCollabReviewInput[],
+    @Arg('review', () => SubmitCollabReviewInput) review: SubmitCollabReviewInput,
     @Ctx() ctx: MyContext
   ): Promise<Collab> {
     // Enrich and save reviews
-    const savedReviews = await enrichAllReviews(
-      reviews.map(_review => ({
-        ..._review,
-        creatorId: ctx.state.user.creator._id, // Add creator ID from context
-      }))
-    )
+    const savedReview = await enrichReview({
+      ...review,
+      creatorId: ctx.state.user.creator._id, // Add creator ID from context
+    })
     // Save reviews in collab
-    const updatedCollab = await submitCreatorReviews(collabId, savedReviews)
+    const updatedCollab = await submitCreatorReview(collabId, savedReview)
     return updatedCollab
   }
 }

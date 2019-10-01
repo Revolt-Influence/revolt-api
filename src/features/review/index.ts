@@ -42,8 +42,8 @@ async function getReviewFromYoutubeVideoUrl(
   }
 }
 
-async function enrichBaseReview(baseReview: BaseReview): Promise<Review> {
-  const { link, format, creatorId } = baseReview
+async function enrichReview(review: BaseReview): Promise<Review> {
+  const { link, format, creatorId } = review
   switch (format) {
     case ReviewFormat.YOUTUBE_VIDEO:
       const video = await getReviewFromYoutubeVideoUrl(link, creatorId)
@@ -51,13 +51,6 @@ async function enrichBaseReview(baseReview: BaseReview): Promise<Review> {
     default:
       return null
   }
-}
-
-async function enrichAllReviews(baseReviews: BaseReview[]): Promise<Review[]> {
-  // Enrich non story reviews
-  const enrichReviewPromises = baseReviews.map(async _baseReview => enrichBaseReview(_baseReview))
-  const reviews = await Promise.all(enrichReviewPromises)
-  return reviews
 }
 
 async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<void> {
@@ -80,9 +73,9 @@ async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<voi
   })
 }
 
-async function submitCreatorReviews(
+async function submitCreatorReview(
   collabId: string,
-  reviews: Review[]
+  review: Review
 ): Promise<DocumentType<Collab>> {
   // Find collab
   const collab = await getCollabById(collabId, 'creator')
@@ -93,17 +86,12 @@ async function submitCreatorReviews(
   // Find related campaign
   const campaign = await getCampaignById(collab.campaign as mongoose.Types.ObjectId)
 
-  // Create review documents
-  const createReviewsPromises = reviews.map(async _review => {
-    const newReview = new ReviewModel(_review)
-    await newReview.save()
-    return newReview
-  })
-  const newReviews = await Promise.all(createReviewsPromises)
-  const newReviewsIds = newReviews.map(_review => _review._id)
+  // Create review document
+  const newReview = new ReviewModel(review)
+  await newReview.save()
 
   // Add reviews to collab
-  collab.reviews = newReviewsIds
+  collab.review = newReview._id
   collab.status = CollabStatus.DONE
   await collab.save()
 
@@ -129,4 +117,4 @@ async function submitCreatorReviews(
   return populatedCollab
 }
 
-export { submitCreatorReviews, enrichAllReviews, BaseReview, getReviewById }
+export { submitCreatorReview, enrichReview, BaseReview, getReviewById }

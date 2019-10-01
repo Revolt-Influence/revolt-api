@@ -1,12 +1,12 @@
+import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
 import { Field, ID, ObjectType } from 'type-graphql'
 import { User } from '../user/model'
 
 @ObjectType({ description: 'A brand may be a game publisher, has User members' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Brand {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field()

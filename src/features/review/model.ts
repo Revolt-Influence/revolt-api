@@ -1,7 +1,7 @@
+import { getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { registerEnumType, Field, ObjectType, ID } from 'type-graphql'
-import { CreatorModel, Creator } from '../creator/model'
+import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
+import { Creator } from '../creator/model'
 
 enum ReviewFormat {
   YOUTUBE_VIDEO = 'Youtube video',
@@ -14,7 +14,7 @@ registerEnumType(ReviewFormat, {
 @ObjectType({ description: 'A review on a social media' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Review {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field(() => ReviewFormat, { description: 'Platform of the review' })
