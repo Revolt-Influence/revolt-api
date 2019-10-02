@@ -39,7 +39,7 @@ class SignupCreatorInput {
   ambassador?: string
 }
 
-@Resolver()
+@Resolver(() => Creator)
 class CreatorResolver {
   @Authorized(AuthRole.ADMIN)
   @Query(() => PaginatedCreatorResponse, {

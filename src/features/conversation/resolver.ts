@@ -20,7 +20,7 @@ import { MyContext, SessionType } from '../session/model'
 const PaginatedConversationResponse = PaginatedResponse(Conversation)
 type PaginatedConversationResponse = InstanceType<typeof PaginatedConversationResponse>
 
-@Resolver()
+@Resolver(() => Conversation)
 class ConversationResolver {
   @Authorized()
   @Query(() => PaginatedConversationResponse, { description: 'Get conversations page' })

@@ -20,7 +20,7 @@ class SubmitCollabReviewInput implements Partial<Review> {
   format: ReviewFormat
 }
 
-@Resolver()
+@Resolver(() => Collab)
 class CollabResolver {
   @Authorized()
   @Query(() => Collab, { description: 'Get collab by ID' })

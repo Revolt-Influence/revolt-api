@@ -16,7 +16,7 @@ class UpdateBrandInput implements Partial<Brand> {
   website: string
 }
 
-@Resolver()
+@Resolver(() => Brand)
 class BrandResolver {
   @Query(() => Brand, { description: 'Get brand by ID' })
   async brand(@Arg('id') id: string): Promise<Brand> {

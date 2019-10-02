@@ -7,7 +7,7 @@ import { getCreatorCollabs } from '../collab'
 import { getAmbassadorStatus } from '../creator'
 import { Session, MyContext, createDefaultSession } from './model'
 
-@Resolver()
+@Resolver(() => Session)
 class SessionResolver {
   @Query(() => Session, {
     description: 'Check if a session exists, could be a creator or a brand user',

@@ -23,7 +23,7 @@ class SignupUserInput {
   ambassador?: string
 }
 
-@Resolver(User)
+@Resolver(() => User)
 class UserResolver {
   @Query(() => User, { nullable: true, description: 'Get user by ID or email' })
   async user(

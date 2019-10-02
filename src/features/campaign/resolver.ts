@@ -42,7 +42,7 @@ class CampaignBriefInput implements Partial<Campaign> {
   rules: string[]
 }
 
-@Resolver()
+@Resolver(() => Campaign)
 class CampaignResolver {
   @Authorized()
   @Query(() => PaginatedCampaignResponse, {
