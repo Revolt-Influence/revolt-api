@@ -7,19 +7,22 @@ import { UserInputError } from 'apollo-server-koa'
 import { UserModel, User } from '../user/model'
 import { Creator, CreatorModel } from '../creator/model'
 import { CustomError, errorNames } from '../../utils/errors'
-import { Session, SessionType } from './model'
+import { Session, SessionType, createDefaultSession } from './model'
+
+function createSessionId(id: string | mongoose.Types.ObjectId): string {
+  return `session_${id}`
+}
 
 async function universalLogin(email: string, plainPassword: string): Promise<Session> {
-  const sessionId = uuid()
   try {
     // Try User login first
     const user = await userLogin(email, plainPassword)
     // Return only happens if userLogin hasn't thrown an error
     return {
-      sessionId,
       isLoggedIn: true,
       sessionType: SessionType.BRAND,
       user,
+      sessionId: createSessionId(user._id),
     }
   } catch (error) {
     try {
@@ -27,10 +30,10 @@ async function universalLogin(email: string, plainPassword: string): Promise<Ses
       const creator = await creatorLogin(email, plainPassword)
       // Return only happens if creatorLogin hasn't thrown an error
       return {
-        sessionId,
         isLoggedIn: true,
         sessionType: SessionType.CREATOR,
         creator,
+        sessionId: createSessionId(creator._id),
       }
     } catch (error) {
       // Neither User nor Creator, throw an error
@@ -90,20 +93,34 @@ passport.serializeUser((session: Session, done) => {
   done(null, key)
 })
 
-passport.deserializeUser((key: IKey, done) => {
+passport.deserializeUser((key: IKey, done: (err: any, session: Session) => void) => {
   if (key.type === SessionType.BRAND) {
     UserModel.findById(key.id, (err, user) => {
       if (err != null || user == null) {
         return done(err, null)
       }
-      return done(err, { ...user.toObject(), sessionType: 'brand' })
+      const session: Session = {
+        user,
+        creator: null,
+        isLoggedIn: true,
+        sessionId: createSessionId(key.id),
+        sessionType: SessionType.BRAND,
+      }
+      return done(err, session)
     })
   } else {
     CreatorModel.findById(key.id).exec((err, creator) => {
       if (err != null || creator == null) {
         return done(err, null)
       }
-      return done(err, { ...creator.toObject(), sessionType: 'creator' })
+      const session: Session = {
+        user: null,
+        creator,
+        isLoggedIn: true,
+        sessionId: createSessionId(key.id),
+        sessionType: SessionType.CREATOR,
+      }
+      return done(err, session)
     })
   }
 })

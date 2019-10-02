@@ -1,4 +1,4 @@
-import { getModelForClass, prop, Ref } from '@hasezoey/typegoose'
+import { getModelForClass, prop, Ref, modelOptions } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Youtuber } from '../youtuber/model'
@@ -38,6 +38,7 @@ registerEnumType(AgeGroup, {
 })
 
 @ObjectType({ description: 'Someone who creates content and has a community' })
+@modelOptions({ schemaOptions: { timestamps: true } })
 class Creator {
   @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
@@ -91,6 +92,12 @@ class Creator {
   @Field(() => CreatorStatus, { description: 'Whether the influencer was validated by an admin' })
   @prop({ enum: CreatorStatus, type: String, default: CreatorStatus.UNVERIFIED })
   status: CreatorStatus
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
 }
 
 const CreatorModel = getModelForClass(Creator)

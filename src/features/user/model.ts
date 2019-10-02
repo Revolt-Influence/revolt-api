@@ -31,14 +31,17 @@ class User {
   password: string
 
   @Field(() => Plan, { description: 'Whether the user has paid' })
-  @prop({ enum: Plan })
+  @prop({ enum: Plan, default: Plan.FREE })
   plan: Plan
 
   @Field({ description: 'Got from Stripe, used to tell what card the user used', nullable: true })
   @prop()
   creditCardLast4?: string
 
-  @Field({ description: 'Used to retrieve a Stripe customer when he gets back to Premium' })
+  @Field({
+    description: 'Used to retrieve a Stripe customer when he gets back to Premium',
+    nullable: true,
+  })
   @prop()
   stripeCustomerId: string
 
@@ -59,6 +62,14 @@ class User {
   @Field(() => Creator, { description: 'The creator who signed him up', nullable: true })
   @prop({ ref: Creator })
   ambassador?: Ref<Creator>
+
+  @Field({ description: 'Only created for Premium users', nullable: true })
+  @prop()
+  firstName?: string
+
+  @Field({ description: 'Only created for Premium users', nullable: true })
+  @prop()
+  lastName?: string
 
   @Field(() => Date)
   createdAt: Readonly<Date>

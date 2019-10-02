@@ -47,7 +47,7 @@ class CreatorResolver {
   })
   async creators(
     @Arg('page', { defaultValue: 1, nullable: true }) page?: number,
-    @Arg('status', { nullable: true }) status?: CreatorStatus
+    @Arg('status', () => CreatorStatus, { nullable: true }) status?: CreatorStatus
   ): Promise<PaginatedCreatorResponse> {
     const paginatedCreators = await getCreatorsPage(page, true, status)
     return paginatedCreators
@@ -126,7 +126,7 @@ class CreatorResolver {
   @Mutation(() => Creator, { description: 'Admin marks creator as verified or blocked' })
   async setCreatorStatus(
     @Arg('creatorId') creatorId: string,
-    @Arg('newStatus') newStatus: CreatorStatus
+    @Arg('newStatus', () => CreatorStatus) newStatus: CreatorStatus
   ): Promise<Creator> {
     const updatedCreator = await setCreatorStatus(mongoose.Types.ObjectId(creatorId), newStatus)
     return updatedCreator

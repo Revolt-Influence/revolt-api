@@ -30,9 +30,10 @@ class Session {
   creator?: Creator
 
   @Field(() => ID, {
-    description: 'UUID used to uniquely identify the session from the GQL client',
+    description: 'ID used to uniquely identify the session from the GQL client, null if logged out',
+    nullable: true,
   })
-  sessionId: string
+  sessionId?: string
 }
 
 interface StateSession extends DefaultState {
@@ -51,7 +52,6 @@ interface MyContext extends DefaultContext {
 function createDefaultSession(): Session {
   return {
     isLoggedIn: false,
-    sessionId: uuid(),
   }
 }
 

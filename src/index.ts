@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   app.context.io = io // Attach socket.io to context for easy access
   const router = new Router()
   dotenv.config()
-  const sessionConfig = { maxAge: 86400000 * 7, renew: true } // Week-long and renewed sessions
+  const sessionConfig: Partial<session.opts> = { maxAge: 86400000 * 7, renew: true } // Week-long and renewed sessions
 
   // Connect database
   const mongoURI = process.env.DB_URI
