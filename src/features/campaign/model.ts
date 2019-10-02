@@ -15,15 +15,19 @@ const Float = loadType(mongoose, 4)
 @InputType('CampaignProductInput')
 class CampaignProduct {
   @Field({ description: 'Name of the product' })
+  @prop()
   name: string
 
   @Field({ description: 'Paragraph of info about the product' })
+  @prop()
   description: string
 
   @Field({ description: 'Link to more info about the product' })
+  @prop()
   website: string
 
   @Field(() => [String], { description: 'Cloudinary URLs of promo images of the product' })
+  @arrayProp({ items: String, type: String })
   pictures: string[]
 
   @Field({ nullable: true, description: 'Link of a YouTube video that presents the product' })
@@ -85,18 +89,18 @@ class Campaign {
   brand: Ref<Brand>
 
   @Field({ description: 'What the creator will receive' })
-  @prop({ _id: false, default: defaultCampaignProduct })
+  @prop({ _id: false, type: CampaignProduct, default: defaultCampaignProduct })
   product: CampaignProduct
 
   @Field(() => TargetAudience, { description: 'The ideal audience the brand wants to reach' })
-  @prop({ _id: false, default: defaultTargetAudience })
+  @prop({ _id: false, type: TargetAudience, default: defaultTargetAudience })
   targetAudience: TargetAudience
 
   @Field(() => [String], { description: 'Rules that creators must respect to receive the gift' })
-  @arrayProp({ items: String, default: ['Feature the game on a Twitter on Instagram post'] })
+  @arrayProp({ items: String, default: ['Feature the game on a Twitch or YouTube video'] })
   rules: string[]
 
-  @Field({ description: 'Total amount of money that will be given to creators' })
+  @Field({ description: 'Total amount of money that will be given to creators', nullable: true })
   @prop(() => Float)
   estimatedBudget: number
 
