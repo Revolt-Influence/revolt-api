@@ -15,24 +15,27 @@ const Float = loadType(mongoose, 4)
 @InputType('CampaignProductInput')
 class CampaignProduct {
   @Field({ description: 'Name of the product' })
-  @prop({ default: '' })
   name: string
 
   @Field({ description: 'Paragraph of info about the product' })
-  @prop({ default: '' })
   description: string
 
   @Field({ description: 'Link to more info about the product' })
-  @prop({ default: '' })
   website: string
 
   @Field(() => [String], { description: 'Cloudinary URLs of promo images of the product' })
-  @prop({ default: '' })
   pictures: string[]
 
   @Field({ nullable: true, description: 'Link of a YouTube video that presents the product' })
   @prop()
-  youtubeLink: string
+  youtubeLink?: string
+}
+
+export const defaultCampaignProduct: CampaignProduct = {
+  name: '',
+  description: '',
+  website: '',
+  pictures: [''],
 }
 
 @ObjectType({ description: 'A model of the audience a brand wants to reach' })
@@ -49,6 +52,12 @@ class TargetAudience {
   @Field(() => [AgeGroup], { description: 'Groups of age' })
   @arrayProp({ enum: AgeGroup, items: String, type: String, default: [] })
   ageGroups: AgeGroup[]
+}
+
+export const defaultTargetAudience: TargetAudience = {
+  gender: Gender.ANY,
+  countries: [],
+  ageGroups: [],
 }
 
 @ObjectType({ description: 'A campaign is made by brands to find collabs to promote a product' })
@@ -76,15 +85,15 @@ class Campaign {
   brand: Ref<Brand>
 
   @Field({ description: 'What the creator will receive' })
-  @prop({ _id: false })
+  @prop({ _id: false, default: defaultCampaignProduct })
   product: CampaignProduct
 
   @Field(() => TargetAudience, { description: 'The ideal audience the brand wants to reach' })
-  @prop({ _id: false })
+  @prop({ _id: false, default: defaultTargetAudience })
   targetAudience: TargetAudience
 
   @Field(() => [String], { description: 'Rules that creators must respect to receive the gift' })
-  @arrayProp({ items: String })
+  @arrayProp({ items: String, default: ['Feature the game on a Twitter on Instagram post'] })
   rules: string[]
 
   @Field({ description: 'Total amount of money that will be given to creators' })
@@ -100,7 +109,7 @@ class Campaign {
   isReviewed: boolean
 
   @Authorized(AuthRole.USER)
-  @Field(() => [Collab], { description: 'All collabs linked to the campaign' })
+  @Field(() => [Collab], { description: 'All collabs linked to the campaign', nullable: true })
   @arrayProp({
     itemsRef: 'Collab',
     ref: 'Collab',
@@ -111,7 +120,7 @@ class Campaign {
   collabs: Ref<Collab>[]
 
   @Authorized(AuthRole.USER)
-  @Field(() => [Review], { description: 'All collabs linked to the campaign' })
+  @Field(() => [Review], { description: 'All reviews made for the campaign', nullable: true })
   @arrayProp({
     itemsRef: 'Review',
     ref: 'Review',

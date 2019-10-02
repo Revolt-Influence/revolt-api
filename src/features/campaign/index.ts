@@ -18,7 +18,10 @@ async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentT
   } as Partial<Campaign>)
   // Save campaign to database
   await campaign.save()
-  return campaign
+  // Return campaign from find so we get the object with the Mongoose defaults
+  const fullCampaign = await CampaignModel.findById(campaign._id)
+  console.log(fullCampaign)
+  return fullCampaign
 }
 
 async function getCampaignById(
