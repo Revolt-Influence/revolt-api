@@ -1,6 +1,6 @@
 import Router from 'koa-router'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
-import { Resolver, Query, Authorized, Ctx, Arg, Mutation } from 'type-graphql'
+import { Resolver, Query, Authorized, Ctx, Arg, Mutation, FieldResolver, Root } from 'type-graphql'
 import { errorNames } from '../../utils/errors'
 import {
   getFullConversation,
@@ -10,15 +10,36 @@ import {
   sendMessage,
 } from '.'
 import { UserModel, User } from '../user/model'
-import { Conversation, ConversationModel } from './model'
+import { Conversation, ConversationModel, Message, MessageModel } from './model'
 import { Brand, BrandModel } from '../brand/model'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel } from '../creator/model'
 import { socketEvents } from '../../utils/sockets'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { MyContext, SessionType } from '../session/model'
 
 const PaginatedConversationResponse = PaginatedResponse(Conversation)
 type PaginatedConversationResponse = InstanceType<typeof PaginatedConversationResponse>
+
+@Resolver(() => Message)
+class MessageResolver {
+  @FieldResolver()
+  async brandAuthor(@Root() message: DocumentType<Message>): Promise<Brand> {
+    const brand = await BrandModel.findById(message.brandAuthor)
+    return brand
+  }
+
+  @FieldResolver()
+  async creatorAuthor(@Root() message: DocumentType<Message>): Promise<Creator> {
+    const creator = await CreatorModel.findById(message.creatorAuthor)
+    return creator
+  }
+
+  @FieldResolver()
+  async conversation(@Root() message: DocumentType<Message>): Promise<Conversation> {
+    const conversation = await ConversationModel.findById(message.conversation)
+    return conversation
+  }
+}
 
 @Resolver(() => Conversation)
 class ConversationResolver {
@@ -88,6 +109,35 @@ class ConversationResolver {
     // No need to return the conversation since sockets will update the client
     return 'Message sent'
   }
+
+  @FieldResolver()
+  async brand(@Root() conversation: DocumentType<Conversation>): Promise<Brand> {
+    const brand = await BrandModel.findById(conversation.brand)
+    return brand
+  }
+
+  @FieldResolver()
+  async creator(@Root() conversation: DocumentType<Conversation>): Promise<Creator> {
+    const creator = await CreatorModel.findById(conversation.creator)
+    return creator
+  }
+
+  @FieldResolver()
+  async messages(@Root() conversation: DocumentType<Conversation>): Promise<Message[]> {
+    const messages = await MessageModel.find()
+      .where('_id')
+      .in(conversation.messages)
+    return messages
+  }
+
+  @FieldResolver()
+  async messagesCount(@Root() conversation: DocumentType<Conversation>): Promise<number> {
+    const messagesCount = await MessageModel.find()
+      .where('_id')
+      .in(conversation.messages)
+      .count()
+    return messagesCount
+  }
 }
 
-export { ConversationResolver, PaginatedConversationResponse }
+export { ConversationResolver, PaginatedConversationResponse, MessageResolver }

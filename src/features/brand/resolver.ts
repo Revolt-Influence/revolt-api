@@ -1,8 +1,19 @@
-import { Query, Arg, Resolver, Mutation, Authorized, InputType, Field } from 'type-graphql'
-import { mongoose } from '@hasezoey/typegoose'
+import {
+  Query,
+  Arg,
+  Resolver,
+  Mutation,
+  Authorized,
+  InputType,
+  Field,
+  Root,
+  FieldResolver,
+} from 'type-graphql'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import { Brand, BrandModel } from './model'
 import { AuthRole } from '../../middleware/auth'
 import { updateBrand } from '.'
+import { User, UserModel } from '../user/model'
 
 @InputType()
 class UpdateBrandInput implements Partial<Brand> {
@@ -38,6 +49,14 @@ class BrandResolver {
   ): Promise<Brand> {
     const savedBrand = await updateBrand(mongoose.Types.ObjectId(id), updatedBrand)
     return savedBrand
+  }
+
+  @FieldResolver()
+  async users(@Root() brand: DocumentType<Brand>): Promise<User[]> {
+    const users = await UserModel.find()
+      .where('_id')
+      .in(brand.users)
+    return users
   }
 }
 

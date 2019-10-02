@@ -1,7 +1,18 @@
-import { Resolver, Query, Arg, InputType, Field, Ctx, Mutation, Authorized } from 'type-graphql'
-import { mongoose } from '@hasezoey/typegoose'
+import {
+  Resolver,
+  Query,
+  Arg,
+  InputType,
+  Field,
+  Ctx,
+  Mutation,
+  Authorized,
+  FieldResolver,
+  Root,
+} from 'type-graphql'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import { User, UserModel, Plan } from './model'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel } from '../creator/model'
 import { Session, createDefaultSession, SessionType, MyContext } from '../session/model'
 import { createUser, updateUserEmail } from '.'
 import { changeUserPassword, sendResetPasswordEmail, resetPasswordViaEmail } from './password'
@@ -128,6 +139,12 @@ class UserResolver {
   ): Promise<string> {
     await resetPasswordViaEmail(token, newPassword)
     return 'Password changed'
+  }
+
+  @FieldResolver()
+  async ambassador(@Root() user: DocumentType<User>): Promise<Creator> {
+    const ambassador = await CreatorModel.findById(user.ambassador)
+    return ambassador
   }
 }
 

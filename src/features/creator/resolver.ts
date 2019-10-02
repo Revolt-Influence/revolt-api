@@ -1,5 +1,16 @@
-import { mongoose } from '@hasezoey/typegoose'
-import { Arg, Authorized, Ctx, Field, InputType, Mutation, Query, Resolver } from 'type-graphql'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
+import {
+  Arg,
+  Authorized,
+  Ctx,
+  Field,
+  InputType,
+  Mutation,
+  Query,
+  Resolver,
+  FieldResolver,
+  Root,
+} from 'type-graphql'
 import {
   changeCreatorPassword,
   createCreator,
@@ -14,6 +25,7 @@ import { createDefaultSession, MyContext, Session, SessionType } from '../sessio
 import { User } from '../user/model'
 import { linkYoutubeChannel } from '../youtuber'
 import { Creator, CreatorModel, CreatorStatus } from './model'
+import { Youtuber, YoutuberModel } from '../youtuber/model'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -145,6 +157,18 @@ class CreatorResolver {
       newPassword,
     })
     return updatedUser
+  }
+
+  @FieldResolver()
+  async youtube(@Root() creator: DocumentType<Creator>): Promise<Youtuber> {
+    const youtube = await YoutuberModel.findById(creator.youtube)
+    return youtube
+  }
+
+  @FieldResolver()
+  async ambassador(@Root() creator: DocumentType<Creator>): Promise<Creator> {
+    const ambassador = await CreatorModel.findById(creator.ambassador)
+    return ambassador
   }
 }
 

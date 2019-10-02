@@ -17,13 +17,14 @@ import { socketEvents } from './utils/sockets'
 import { UserResolver } from './features/user/resolver'
 import { CreatorResolver } from './features/creator/resolver'
 import { CampaignResolver } from './features/campaign/resolver'
-import { ConversationResolver } from './features/conversation/resolver'
+import { ConversationResolver, MessageResolver } from './features/conversation/resolver'
 import { BrandResolver } from './features/brand/resolver'
 import { CollabResolver } from './features/collab/resolver'
 import { SessionResolver } from './features/session/resolver'
 import { YoutuberResolver } from './features/youtuber/resolver'
 import { MyContext, Session } from './features/session/model'
 import { customAuthChecker } from './middleware/auth'
+import { ReviewResolver } from './features/review/resolver'
 
 async function main(): Promise<void> {
   // Create instances and configs./middleware/auth
@@ -52,12 +53,14 @@ async function main(): Promise<void> {
   const schema = await buildSchema({
     resolvers: [
       BrandResolver,
-      CreatorResolver,
       CampaignResolver,
-      ConversationResolver,
       CollabResolver,
-      UserResolver,
+      ConversationResolver,
+      CreatorResolver,
+      MessageResolver,
+      ReviewResolver,
       SessionResolver,
+      UserResolver,
       YoutuberResolver,
     ],
     authChecker: customAuthChecker,

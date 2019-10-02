@@ -113,7 +113,7 @@ class Campaign {
   isReviewed: boolean
 
   @Authorized(AuthRole.USER)
-  @Field(() => [Collab], { description: 'All collabs linked to the campaign', nullable: true })
+  @Field(() => [Collab], { description: 'All collabs linked to the campaign' })
   @arrayProp({
     itemsRef: 'Collab',
     ref: 'Collab',
@@ -124,7 +124,7 @@ class Campaign {
   collabs: Ref<Collab>[]
 
   @Authorized(AuthRole.USER)
-  @Field(() => [Review], { description: 'All reviews made for the campaign', nullable: true })
+  @Field(() => [Review], { description: 'All reviews made for the campaign' })
   @arrayProp({
     itemsRef: 'Review',
     ref: 'Review',

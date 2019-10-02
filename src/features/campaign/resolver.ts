@@ -1,4 +1,4 @@
-import { mongoose } from '@hasezoey/typegoose'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import {
   Arg,
   Authorized,
@@ -9,6 +9,8 @@ import {
   Query,
   Resolver,
   ObjectType,
+  FieldResolver,
+  Root,
 } from 'type-graphql'
 import {
   createCampaign,
@@ -22,10 +24,13 @@ import {
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
-import { Brand } from '../brand/model'
+import { Brand, BrandModel } from '../brand/model'
 import { getExperiencesPage } from '../creator/experiences'
 import { MyContext } from '../session/model'
 import { Campaign, CampaignModel, CampaignProduct, TargetAudience } from './model'
+import { User, UserModel } from '../user/model'
+import { CollabModel, Collab } from '../collab/model'
+import { Review, ReviewModel } from '../review/model'
 
 const PaginatedCampaignResponse = PaginatedResponse(Campaign)
 type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
@@ -137,6 +142,34 @@ class CampaignResolver {
   ): Promise<string> {
     await deleteCampaign(mongoose.Types.ObjectId(campaignId), ctx.state.user.user._id)
     return `Deleted campaign ${campaignId}`
+  }
+
+  @FieldResolver()
+  async owner(@Root() campaign: DocumentType<Campaign>): Promise<User> {
+    const owner = await UserModel.findById(campaign.owner)
+    return owner
+  }
+
+  @FieldResolver()
+  async brand(@Root() campaign: DocumentType<Campaign>): Promise<Brand> {
+    const brand = await BrandModel.findById(campaign.brand)
+    return brand
+  }
+
+  @FieldResolver()
+  async collabs(@Root() campaign: DocumentType<Campaign>): Promise<Collab[]> {
+    const collabs = await CollabModel.find()
+      .where('_id')
+      .in(campaign.collabs)
+    return collabs
+  }
+
+  @FieldResolver()
+  async reviews(@Root() campaign: DocumentType<Campaign>): Promise<Review[]> {
+    const reviews = await ReviewModel.find()
+      .where('_id')
+      .in(campaign.reviews)
+    return reviews
   }
 }
 
