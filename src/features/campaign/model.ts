@@ -1,7 +1,7 @@
 import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
 import { loadType } from 'mongoose-float'
-import { Authorized, Field, ID, InputType, ObjectType } from 'type-graphql'
+import { Authorized, Field, ID, InputType, ObjectType, registerEnumType } from 'type-graphql'
 import { AuthRole } from '../../middleware/auth'
 import { Brand } from '../brand/model'
 import { Collab } from '../collab/model'
@@ -10,6 +10,43 @@ import { Review } from '../review/model'
 import { User } from '../user/model'
 
 const Float = loadType(mongoose, 4)
+
+export enum TrackingProvider {
+  NONE = 'No tracking provider',
+  GOOGLE_ANALYTICS = 'Google Analytics',
+  GAME_ANALYTICS = 'Game Analytics',
+  UNITY_ANALYTICS = 'Unity Analytics',
+  OTHER = 'Other tracking provider',
+}
+registerEnumType(TrackingProvider, {
+  name: 'TrackingProvider',
+  description: 'Platforms that provide analytics for game',
+})
+
+export enum GameCategory {
+  RPG = 'RPG',
+  STRATEGY = 'Strategy',
+  ACTION = 'Action',
+  ADVENTURE = 'Adventure',
+  SIMULATION = 'Simulation',
+  HORROR = 'Horror',
+  SPORTS = 'Sports',
+  MMO = 'MMO',
+  PARTY_GAME = 'Party game',
+  INDIE = 'Indie',
+  PLATFORMER = 'Platformer',
+  RETRO = 'Retro',
+  SHOOTER = 'Shooter',
+  AR_VR = 'AR/VR',
+  SURVIVAL = 'Survival',
+  ARCADE = 'Arcade',
+  ROGUELIKE = 'Roguelike',
+  PUZZLE = 'Puzzle',
+}
+registerEnumType(GameCategory, {
+  name: 'GameCategory',
+  description: 'Family of games',
+})
 
 @ObjectType({ description: 'What a creator can receive' })
 @InputType('CampaignProductInput')
@@ -30,6 +67,14 @@ class CampaignProduct {
   @arrayProp({ items: String, type: String })
   pictures: string[]
 
+  @Field(() => Date, { description: 'Game lauch date, can be past or future' })
+  @prop({ type: Date })
+  launchedAt: Date
+
+  @Field(() => [GameCategory], { description: 'Game categories that best describe the game' })
+  @arrayProp({ enum: GameCategory, type: String, items: String })
+  categories: GameCategory[]
+
   @Field({ nullable: true, description: 'Link of a YouTube video that presents the product' })
   @prop()
   youtubeLink?: string
@@ -40,6 +85,8 @@ export const defaultCampaignProduct: CampaignProduct = {
   description: '',
   website: '',
   pictures: [''],
+  launchedAt: new Date(),
+  categories: [],
 }
 
 @ObjectType({ description: 'A model of the audience a brand wants to reach' })
@@ -54,7 +101,7 @@ class TargetAudience {
   countries: string[]
 
   @Field(() => [AgeGroup], { description: 'Groups of age' })
-  @arrayProp({ enum: AgeGroup, items: String, type: String, default: [] })
+  @arrayProp({ enum: AgeGroup, items: String, type: String, default: [AgeGroup.ANY] })
   ageGroups: AgeGroup[]
 }
 
@@ -103,6 +150,10 @@ class Campaign {
   @Field({ description: 'Total amount of money that will be given to creators', nullable: true })
   @prop(() => Float)
   estimatedBudget: number
+
+  @Field(() => TrackingProvider, { description: 'Solution used to provide game analytics' })
+  @prop({ enum: TrackingProvider, type: String, default: TrackingProvider.NONE })
+  trackingProvider: TrackingProvider
 
   @Field({ description: 'Whether the brand is willing to publish the campaign' })
   @prop({ default: true })

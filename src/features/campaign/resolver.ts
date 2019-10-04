@@ -45,6 +45,9 @@ class CampaignBriefInput implements Partial<Campaign> {
 
   @Field(() => [String])
   rules: string[]
+
+  @Field({ nullable: true })
+  estimatedBudget: number
 }
 
 @Resolver(() => Campaign)

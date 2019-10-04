@@ -31,6 +31,7 @@ enum AgeGroup {
   AGE_45_54 = 'age45-54',
   AGE_55_64 = 'age55-64',
   AGE_65_PLUS = 'age65-',
+  ANY = 'any',
 }
 registerEnumType(AgeGroup, {
   name: 'AgeGroup',
