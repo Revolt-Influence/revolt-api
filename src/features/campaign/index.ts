@@ -155,6 +155,7 @@ async function updateCampaignBrief(
   campaign.description = updatedCampaign.description
   campaign.rules = updatedCampaign.rules
   campaign.estimatedBudget = updatedCampaign.estimatedBudget
+  campaign.trackingProvider = updatedCampaign.trackingProvider
 
   // Save and return populated campaign
   await campaign.save()

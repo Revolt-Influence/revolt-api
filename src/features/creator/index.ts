@@ -53,11 +53,6 @@ async function getCreatorsPage(
 }
 
 async function createCreator(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {
-  // Check if data is complete
-  if (!creator || !creator.country || !creator.language || !creator.birthYear) {
-    throw new CustomError(400, errorNames.invalidPayload)
-  }
-
   // Make sure creator or a brand with same email doesn't already exist
   const existingCreator = await CreatorModel.findOne({ email: creator.email })
   const existingUser = await UserModel.findOne({ email: creator.email })

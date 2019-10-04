@@ -84,7 +84,7 @@ export const defaultCampaignProduct: CampaignProduct = {
   name: '',
   description: '',
   website: '',
-  pictures: [''],
+  pictures: [],
   launchedAt: new Date(),
   categories: [],
 }

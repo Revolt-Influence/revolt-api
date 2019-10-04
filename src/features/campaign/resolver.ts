@@ -27,7 +27,7 @@ import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { Brand, BrandModel } from '../brand/model'
 import { getExperiencesPage } from '../creator/experiences'
 import { MyContext } from '../session/model'
-import { Campaign, CampaignModel, CampaignProduct, TargetAudience } from './model'
+import { Campaign, CampaignModel, CampaignProduct, TargetAudience, TrackingProvider } from './model'
 import { User, UserModel } from '../user/model'
 import { CollabModel, Collab } from '../collab/model'
 import { Review, ReviewModel } from '../review/model'
@@ -48,6 +48,9 @@ class CampaignBriefInput implements Partial<Campaign> {
 
   @Field({ nullable: true })
   estimatedBudget: number
+
+  @Field(() => TrackingProvider)
+  trackingProvider: TrackingProvider
 }
 
 @Resolver(() => Campaign)

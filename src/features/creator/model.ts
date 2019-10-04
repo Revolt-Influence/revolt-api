@@ -1,7 +1,8 @@
-import { getModelForClass, prop, Ref, modelOptions } from '@hasezoey/typegoose'
+import { getModelForClass, prop, Ref, modelOptions, arrayProp } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Youtuber } from '../youtuber/model'
+import { GameCategory } from '../campaign/model'
 
 enum CreatorStatus {
   UNVERIFIED = 'unverified',
@@ -38,6 +39,28 @@ registerEnumType(AgeGroup, {
   description: 'Age groups based formatted to match YouTube API data',
 })
 
+export enum Language {
+  ENGLISH = 'english',
+  SPANISH = 'spanish',
+  GERMAN = 'german',
+  FRENCH = 'french',
+  JAPANESE = 'japanese',
+  MANDARIN = 'mandarin chinese',
+  RUSSIAN = 'russian',
+  PORTUGUESE = 'portuguese',
+  ITALIAN = 'italian',
+  ARABIC = 'arabic',
+  SWEDISH = 'swedish',
+  NORWEGIAN = 'norwegian',
+  HINDI = 'hindi',
+  INDONESIAN = 'indonesian',
+  OTHER = 'other',
+}
+registerEnumType(Language, {
+  name: 'Language',
+  description: 'Spoken language or dialect',
+})
+
 @ObjectType({ description: 'Someone who creates content and has a community' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Creator {
@@ -52,9 +75,9 @@ class Creator {
   @prop()
   picture: string
 
-  @Field({ description: 'Creator-defined named, can be a full name or a pseudo' })
+  @Field({ description: 'Creator display name, can be a full name or a pseudo' })
   @prop()
-  name: string // display name
+  name: string
 
   @Field({ description: 'Where the creator comes from' })
   @prop()
@@ -63,6 +86,14 @@ class Creator {
   @Field({ description: 'Year of birth, used to get age approximation and ensure he is 13+' })
   @prop()
   birthYear: number
+
+  @Field(() => [GameCategory], { description: 'Game categories the creator plays' })
+  @arrayProp({ enum: GameCategory, type: String, items: String })
+  categories: GameCategory[]
+
+  @Field(() => Language, { description: "What language creator's content is in" })
+  @prop({ enum: Language, type: String, default: Language.ENGLISH })
+  language: string
 
   @prop()
   password: string

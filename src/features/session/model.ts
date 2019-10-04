@@ -1,8 +1,6 @@
 import { registerEnumType, Field, ObjectType, ID } from 'type-graphql'
 import { DefaultState, DefaultContext } from 'koa'
-import uuid from 'uuid/v4'
 import socketIo from 'socket.io'
-
 import { User } from '../user/model'
 import { Creator } from '../creator/model'
 
@@ -23,10 +21,10 @@ class Session {
   @Field(() => SessionType, { nullable: true })
   sessionType?: SessionType
 
-  @Field({ description: 'The user that _may_ be logged in', nullable: true })
+  @Field(() => User, { description: 'The user that _may_ be logged in', nullable: true })
   user?: User
 
-  @Field({ description: 'The creator that _may_ be logged in', nullable: true })
+  @Field(() => Creator, { description: 'The creator that _may_ be logged in', nullable: true })
   creator?: Creator
 
   @Field(() => ID, {

@@ -24,8 +24,9 @@ import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { createDefaultSession, MyContext, Session, SessionType } from '../session/model'
 import { User } from '../user/model'
 import { linkYoutubeChannel } from '../youtuber'
-import { Creator, CreatorModel, CreatorStatus } from './model'
+import { Creator, CreatorModel, CreatorStatus, Language } from './model'
 import { Youtuber, YoutuberModel } from '../youtuber/model'
+import { GameCategory } from '../campaign/model'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -41,11 +42,11 @@ class SignupCreatorInput {
   @Field()
   birthYear: number
 
-  @Field()
-  country: string
-
-  @Field()
+  @Field(() => Language)
   language: string
+
+  @Field(() => [GameCategory])
+  categories: GameCategory[]
 
   @Field({ nullable: true, description: 'The ID of the creator who signed him up' })
   ambassador?: string
