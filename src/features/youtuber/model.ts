@@ -1,7 +1,7 @@
-import * as mongoose from 'mongoose'
-import { prop, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
+import { arrayProp, getModelForClass, modelOptions, prop } from '@hasezoey/typegoose'
+import mongoose from 'mongoose'
 import { loadType } from 'mongoose-float'
-import { Field, ObjectType, ID } from 'type-graphql'
+import { Field, ID, ObjectType } from 'type-graphql'
 
 const Float = loadType(mongoose, 4)
 
@@ -86,9 +86,11 @@ class YoutubeAudience {
   @arrayProp({ _id: false, items: AudienceMetric, type: AudienceMetric })
   countries: AudienceMetric[]
 
+  @Field({ description: 'Percentage of male subscribers, between 0 and 100' })
   @prop(percentageOptions)
   malePercentage: number
 
+  @Field({ description: 'Percentage of female subscribers, between 0 and 100' })
   @prop(percentageOptions)
   femalePercentage: number
 }
@@ -96,7 +98,7 @@ class YoutubeAudience {
 @ObjectType()
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Youtuber {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field({ description: 'Channel title' })

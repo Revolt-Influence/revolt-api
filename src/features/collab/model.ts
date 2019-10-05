@@ -1,19 +1,23 @@
-import * as mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, arrayProp, modelOptions } from '@hasezoey/typegoose'
-import { registerEnumType, ObjectType, Field, ID } from 'type-graphql'
+import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
+import mongoose from 'mongoose'
+import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Campaign } from '../campaign/model'
-import { CreatorModel, Creator } from '../creator/model'
-import { Review, ReviewFormat } from '../review/model'
-import { ConversationModel, Conversation } from '../conversation/model'
+import { Conversation } from '../conversation/model'
+import { Creator } from '../creator/model'
+import { Review } from '../review/model'
 
 enum ReviewCollabDecision {
   ACCEPT = 'accept',
-  REFUSE = 'refuse',
+  DENY = 'deny',
   MARK_AS_SENT = 'markAsSent',
 }
+registerEnumType(ReviewCollabDecision, {
+  name: 'ReviewCollabDecision',
+  description: 'Whether a brand accepts a collab',
+})
 
 enum CollabStatus {
-  APPLIED = 'applied',
+  REQUEST = 'request',
   ACCEPTED = 'accepted',
   SENT = 'sent',
   DENIED = 'denied',
@@ -29,7 +33,7 @@ registerEnumType(CollabStatus, {
 })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Collab {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field(() => CollabStatus, { description: 'Advancement of the collab' })
@@ -48,9 +52,11 @@ class Collab {
   @prop()
   message: string
 
-  @arrayProp({ itemsRef: Review })
-  reviews: Ref<Review>[]
+  @Field(() => Review, { description: 'Social media post made for the campaign' })
+  @prop({ ref: Review })
+  review: Ref<Review>
 
+  @Field(() => Conversation, { description: 'Conv where collab brand and creator can chat' })
   @prop({ ref: Conversation })
   conversation: Ref<Conversation>
 

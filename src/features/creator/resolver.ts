@@ -1,19 +1,31 @@
-import { mongoose } from '@hasezoey/typegoose'
-import { Arg, Authorized, Ctx, Field, InputType, Mutation, Query, Resolver } from 'type-graphql'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
+import {
+  Arg,
+  Authorized,
+  Ctx,
+  Field,
+  InputType,
+  Mutation,
+  Query,
+  Resolver,
+  FieldResolver,
+  Root,
+} from 'type-graphql'
 import {
   changeCreatorPassword,
   createCreator,
   getCreatorsPage,
   saveCreatorProfile,
   setCreatorStatus,
-  updateCreatorContactInfo,
+  updateCreatorEmail,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { createDefaultSession, MyContext, Session, SessionType } from '../session/model'
 import { User } from '../user/model'
 import { linkYoutubeChannel } from '../youtuber'
-import { Creator, CreatorModel, CreatorStatus, Gender } from './model'
+import { Creator, CreatorModel, CreatorStatus, Language, GameCategory } from './model'
+import { Youtuber, YoutuberModel } from '../youtuber/model'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -27,25 +39,19 @@ class SignupCreatorInput {
   password: string
 
   @Field()
-  phone: string
-
-  @Field()
   birthYear: number
 
-  @Field(() => Gender)
-  gender: Gender
-
-  @Field()
-  country: string
-
-  @Field()
+  @Field(() => Language)
   language: string
+
+  @Field(() => [GameCategory])
+  categories: GameCategory[]
 
   @Field({ nullable: true, description: 'The ID of the creator who signed him up' })
   ambassador?: string
 }
 
-@Resolver()
+@Resolver(() => Creator)
 class CreatorResolver {
   @Authorized(AuthRole.ADMIN)
   @Query(() => PaginatedCreatorResponse, {
@@ -53,7 +59,7 @@ class CreatorResolver {
   })
   async creators(
     @Arg('page', { defaultValue: 1, nullable: true }) page?: number,
-    @Arg('status', { nullable: true }) status?: CreatorStatus
+    @Arg('status', () => CreatorStatus, { nullable: true }) status?: CreatorStatus
   ): Promise<PaginatedCreatorResponse> {
     const paginatedCreators = await getCreatorsPage(page, true, status)
     return paginatedCreators
@@ -95,17 +101,12 @@ class CreatorResolver {
   }
 
   @Authorized(AuthRole.CREATOR)
-  @Mutation(() => Creator, { description: 'Change creator email and/or phone' })
-  async updateCreatorContactInfo(
+  @Mutation(() => Creator, { description: 'Change creator email' })
+  async updateCreatorEmail(
     @Arg('newEmail') newEmail: string,
-    @Arg('newPhone') newPhone: string,
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
-    const updatedCreator = await updateCreatorContactInfo(
-      ctx.state.user.creator._id,
-      newEmail,
-      newPhone
-    )
+    const updatedCreator = await updateCreatorEmail(ctx.state.user.creator._id, newEmail)
     return updatedCreator
   }
 
@@ -137,7 +138,7 @@ class CreatorResolver {
   @Mutation(() => Creator, { description: 'Admin marks creator as verified or blocked' })
   async setCreatorStatus(
     @Arg('creatorId') creatorId: string,
-    @Arg('newStatus') newStatus: CreatorStatus
+    @Arg('newStatus', () => CreatorStatus) newStatus: CreatorStatus
   ): Promise<Creator> {
     const updatedCreator = await setCreatorStatus(mongoose.Types.ObjectId(creatorId), newStatus)
     return updatedCreator
@@ -145,7 +146,7 @@ class CreatorResolver {
 
   @Authorized(AuthRole.CREATOR)
   @Mutation(() => User, { description: 'Change creator password' })
-  async changeUserPassword(
+  async changeCreatorPassword(
     @Arg('currentPassword') currentPassword: string,
     @Arg('newPassword') newPassword: string,
     @Ctx() ctx: MyContext
@@ -156,6 +157,18 @@ class CreatorResolver {
       newPassword,
     })
     return updatedUser
+  }
+
+  @FieldResolver()
+  async youtube(@Root() creator: DocumentType<Creator>): Promise<Youtuber> {
+    const youtube = await YoutuberModel.findById(creator.youtube)
+    return youtube
+  }
+
+  @FieldResolver()
+  async ambassador(@Root() creator: DocumentType<Creator>): Promise<Creator> {
+    const ambassador = await CreatorModel.findById(creator.ambassador)
+    return ambassador
   }
 }
 

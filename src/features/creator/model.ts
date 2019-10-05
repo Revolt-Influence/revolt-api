@@ -1,7 +1,7 @@
-import * as mongoose from 'mongoose'
-import { prop, Ref, getModelForClass } from '@hasezoey/typegoose'
-import { registerEnumType, ObjectType, Field, ID } from 'type-graphql'
-import { YoutuberModel, Youtuber } from '../youtuber/model'
+import { getModelForClass, prop, Ref, modelOptions, arrayProp } from '@hasezoey/typegoose'
+import mongoose from 'mongoose'
+import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
+import { Youtuber } from '../youtuber/model'
 
 enum CreatorStatus {
   UNVERIFIED = 'unverified',
@@ -31,44 +31,92 @@ enum AgeGroup {
   AGE_45_54 = 'age45-54',
   AGE_55_64 = 'age55-64',
   AGE_65_PLUS = 'age65-',
+  ANY = 'any',
 }
 registerEnumType(AgeGroup, {
   name: 'AgeGroup',
   description: 'Age groups based formatted to match YouTube API data',
 })
 
+export enum Language {
+  ENGLISH = 'english',
+  SPANISH = 'spanish',
+  GERMAN = 'german',
+  FRENCH = 'french',
+  JAPANESE = 'japanese',
+  MANDARIN = 'mandarin chinese',
+  RUSSIAN = 'russian',
+  PORTUGUESE = 'portuguese',
+  ITALIAN = 'italian',
+  ARABIC = 'arabic',
+  SWEDISH = 'swedish',
+  NORWEGIAN = 'norwegian',
+  HINDI = 'hindi',
+  INDONESIAN = 'indonesian',
+  OTHER = 'other',
+}
+registerEnumType(Language, {
+  name: 'Language',
+  description: 'Spoken language or dialect',
+})
+
+export enum GameCategory {
+  RPG = 'RPG',
+  STRATEGY = 'Strategy',
+  ACTION = 'Action',
+  ADVENTURE = 'Adventure',
+  SIMULATION = 'Simulation',
+  HORROR = 'Horror',
+  SPORTS = 'Sports',
+  MMO = 'MMO',
+  PARTY_GAME = 'Party game',
+  INDIE = 'Indie',
+  PLATFORMER = 'Platformer',
+  RETRO = 'Retro',
+  SHOOTER = 'Shooter',
+  AR_VR = 'AR/VR',
+  SURVIVAL = 'Survival',
+  ARCADE = 'Arcade',
+  ROGUELIKE = 'Roguelike',
+  PUZZLE = 'Puzzle',
+}
+registerEnumType(GameCategory, {
+  name: 'GameCategory',
+  description: 'Family of games',
+})
+
 @ObjectType({ description: 'Someone who creates content and has a community' })
+@modelOptions({ schemaOptions: { timestamps: true } })
 class Creator {
-  @Field(type => ID, { description: 'Mongoose generated ID' })
+  @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
   @Field({ description: 'The email is used for login and notifications' })
   @prop({ lowercase: true, trim: true, unique: true })
   email: string
 
-  @Field({ description: 'Used in case of problems, not accessible to brands' })
+  @Field({
+    description: 'Cloudinary URL of a picture got from user upload or a social network',
+    nullable: true,
+  })
   @prop()
-  phone: string
+  picture?: string
 
-  @Field({ description: 'Cloudinary URL of a picture got from user upload or a social network' })
+  @Field({ description: 'Creator display name, can be a full name or a pseudo', nullable: true })
   @prop()
-  picture: string
-
-  @Field({ description: 'Creator-defined named, can be a full name or a pseudo' })
-  @prop()
-  name: string // display name
-
-  @Field(() => Gender, { description: 'Male, female or other' })
-  @prop({ enum: Gender })
-  gender: Gender
-
-  @Field({ description: 'Where the creator comes from' })
-  @prop()
-  country: string
+  name?: string
 
   @Field({ description: 'Year of birth, used to get age approximation and ensure he is 13+' })
   @prop()
   birthYear: number
+
+  @Field(() => [GameCategory], { description: 'Game categories the creator plays' })
+  @arrayProp({ enum: GameCategory, type: String, items: String })
+  categories: GameCategory[]
+
+  @Field(() => Language, { description: "What language creator's content is in" })
+  @prop({ enum: Language, type: String, default: Language.ENGLISH })
+  language: string
 
   @prop()
   password: string
@@ -99,6 +147,12 @@ class Creator {
   @Field(() => CreatorStatus, { description: 'Whether the influencer was validated by an admin' })
   @prop({ enum: CreatorStatus, type: String, default: CreatorStatus.UNVERIFIED })
   status: CreatorStatus
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
 }
 
 const CreatorModel = getModelForClass(Creator)

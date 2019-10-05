@@ -11,14 +11,26 @@ import { CampaignBriefInput, PaginatedCampaignResponse } from './resolver'
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
 
 async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentType<Campaign>> {
+  // Prepare brand to associate with campaign
+  const brandDraft: Partial<Brand> = {
+    name: '',
+    logo: '',
+    website: '',
+    users: [owner],
+  }
+  const brand = new BrandModel(brandDraft)
+  await brand.save()
   // Prepare campaign
   const campaign = new CampaignModel({
     owner,
-    name: 'Ma nouvelle campagne',
+    name: 'My new campaign',
+    brand: brand._id,
   } as Partial<Campaign>)
   // Save campaign to database
   await campaign.save()
-  return campaign
+  // Return campaign from find so we get the object with the Mongoose defaults
+  const fullCampaign = await CampaignModel.findById(campaign._id)
+  return fullCampaign
 }
 
 async function getCampaignById(
@@ -39,12 +51,7 @@ async function getCampaignById(
 async function getCampaignsFromQuery(query: any, page: number): Promise<PaginatedCampaignResponse> {
   const campaignsPromise = CampaignModel.find(query)
     .sort({ creationDate: 'descending' })
-    .populate({
-      path: 'settings.brand',
-      model: 'Brand',
-    })
-    .select('_id name owner creationDate settings isArchived isReviewed')
-    .skip(page * CAMPAIGNS_PER_PAGE)
+    .skip((page - 1) * CAMPAIGNS_PER_PAGE)
     .limit(CAMPAIGNS_PER_PAGE)
     .exec()
   const totalCountPromise = CampaignModel.find(query)
@@ -147,6 +154,8 @@ async function updateCampaignBrief(
   campaign.name = updatedCampaign.name
   campaign.description = updatedCampaign.description
   campaign.rules = updatedCampaign.rules
+  campaign.estimatedBudget = updatedCampaign.estimatedBudget
+  campaign.trackingProvider = updatedCampaign.trackingProvider
 
   // Save and return populated campaign
   await campaign.save()

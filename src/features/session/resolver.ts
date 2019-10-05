@@ -1,4 +1,4 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { Resolver, Query, Ctx, Mutation, Arg } from 'type-graphql'
 import { universalLogin } from '.'
 import { errorNames } from '../../utils/errors'
@@ -7,7 +7,7 @@ import { getCreatorCollabs } from '../collab'
 import { getAmbassadorStatus } from '../creator'
 import { Session, MyContext, createDefaultSession } from './model'
 
-@Resolver()
+@Resolver(() => Session)
 class SessionResolver {
   @Query(() => Session, {
     description: 'Check if a session exists, could be a creator or a brand user',

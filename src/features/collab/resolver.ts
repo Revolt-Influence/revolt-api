@@ -1,27 +1,55 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { Context } from 'koa'
-import { Resolver, Mutation, Authorized, Arg, Ctx, InputType, Field } from 'type-graphql'
-import { mongoose } from '@hasezoey/typegoose'
+import {
+  Resolver,
+  Mutation,
+  Authorized,
+  Arg,
+  Ctx,
+  InputType,
+  Field,
+  Query,
+  FieldResolver,
+  Root,
+} from 'type-graphql'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import { errorNames } from '../../utils/errors'
-import { getCollabById, reviewCollab } from '.'
-import { submitCreatorReviews, BaseReview, enrichAllReviews } from '../review'
-import { Collab, ReviewCollabDecision } from './model'
+import { getCollabById, reviewCollab, getCreatorCollabs } from '.'
+import { submitCreatorReview, BaseReview, enrichReview } from '../review'
+import { Collab, ReviewCollabDecision, CollabModel } from './model'
 import { AuthRole } from '../../middleware/auth'
 import { MyContext } from '../session/model'
 import { applyToExperience } from '../creator/experiences'
-import { Review, ReviewFormat } from '../review/model'
+import { Review, ReviewFormat, ReviewModel } from '../review/model'
+import { Creator, CreatorModel } from '../creator/model'
+import { Campaign, CampaignModel } from '../campaign/model'
+import { Conversation, ConversationModel } from '../conversation/model'
 
 @InputType()
-class CollabReviewInput implements Partial<Review> {
+class SubmitCollabReviewInput implements Partial<Review> {
   @Field()
   link: string
 
-  @Field()
+  @Field(() => ReviewFormat, { description: 'What platform the review is posted on' })
   format: ReviewFormat
 }
 
-@Resolver()
+@Resolver(() => Collab)
 class CollabResolver {
+  @Authorized()
+  @Query(() => Collab, { description: 'Get collab by ID' })
+  async collab(@Arg('collabId') collabId: string): Promise<Collab> {
+    const collab = await CollabModel.findById(collabId)
+    return collab
+  }
+
+  @Authorized(AuthRole.CREATOR)
+  @Query(() => [Collab], { description: 'Get list of creator collabs' })
+  async collabs(@Ctx() ctx: MyContext): Promise<Collab[]> {
+    const collabs = await getCreatorCollabs(ctx.state.user.creator._id)
+    return collabs
+  }
+
   @Authorized(AuthRole.CREATOR)
   @Mutation(() => Collab, { description: 'Creates a collab' })
   async applyToExperience(
@@ -41,7 +69,9 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'Brand user accepts or denies a collab application' })
   async reviewCollabApplication(
     @Arg('collabId') collabId: string,
-    @Arg('decision', { description: 'Whether the brand accepts or refuses the campaign' })
+    @Arg('decision', () => ReviewCollabDecision, {
+      description: 'Whether the brand accepts or refuses the campaign',
+    })
     decision: ReviewCollabDecision
   ): Promise<Collab> {
     const updatedCollab = await reviewCollab(mongoose.Types.ObjectId(collabId), decision)
@@ -52,20 +82,42 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'End a collab by submitting the sponsored content' })
   async submitCollabReview(
     @Arg('collabId') collabId: string,
-    @Arg('reviews', () => [CollabReviewInput]) reviews: CollabReviewInput[],
+    @Arg('review', () => SubmitCollabReviewInput) review: SubmitCollabReviewInput,
     @Ctx() ctx: MyContext
   ): Promise<Collab> {
     // Enrich and save reviews
-    const savedReviews = await enrichAllReviews(
-      reviews.map(_review => ({
-        ..._review,
-        creatorId: ctx.state.user.creator._id, // Add creator ID from context
-      }))
-    )
+    const savedReview = await enrichReview({
+      ...review,
+      creatorId: ctx.state.user.creator._id, // Add creator ID from context
+    })
     // Save reviews in collab
-    const updatedCollab = await submitCreatorReviews(collabId, savedReviews)
+    const updatedCollab = await submitCreatorReview(collabId, savedReview)
     return updatedCollab
+  }
+
+  @FieldResolver()
+  async creator(@Root() collab: DocumentType<Collab>): Promise<Creator> {
+    const creator = await CreatorModel.findById(collab.creator)
+    return creator
+  }
+
+  @FieldResolver()
+  async campaign(@Root() collab: DocumentType<Collab>): Promise<Campaign> {
+    const campaign = await CampaignModel.findById(collab.campaign)
+    return campaign
+  }
+
+  @FieldResolver()
+  async review(@Root() collab: DocumentType<Collab>): Promise<Review> {
+    const review = await ReviewModel.findById(collab.review)
+    return review
+  }
+
+  @FieldResolver()
+  async conversation(@Root() collab: DocumentType<Collab>): Promise<Conversation> {
+    const conversation = await ConversationModel.findById(collab.conversation)
+    return conversation
   }
 }
 
-export { CollabResolver }
+export { CollabResolver, SubmitCollabReviewInput }

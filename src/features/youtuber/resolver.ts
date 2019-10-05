@@ -1,11 +1,11 @@
-import * as Router from 'koa-router'
+import Router from 'koa-router'
 import { Context } from 'koa'
 import { Resolver, Query, Arg } from 'type-graphql'
 import { errorNames } from '../../utils/errors'
 import { getYoutuberById } from '.'
 import { Youtuber, YoutuberModel } from './model'
 
-@Resolver()
+@Resolver(() => Youtuber)
 class YoutuberResolver {
   @Query(() => Youtuber, { description: 'Get Youtuber by ID' })
   async youtuber(@Arg('id') id: string): Promise<Youtuber> {

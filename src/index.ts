@@ -1,13 +1,13 @@
 // Get dependencies
-import * as Koa from 'koa'
-import * as Router from 'koa-router'
-import * as cors from '@koa/cors'
-import * as bodyParser from 'koa-bodyparser'
-import * as mongoose from 'mongoose'
-import * as dotenv from 'dotenv'
-import * as session from 'koa-session'
-import * as socketIo from 'socket.io'
-import * as http from 'http'
+import Koa from 'koa'
+import Router from 'koa-router'
+import cors from '@koa/cors'
+import bodyParser from 'koa-bodyparser'
+import mongoose from 'mongoose'
+import dotenv from 'dotenv'
+import session from 'koa-session'
+import socketIo from 'socket.io'
+import http from 'http'
 import { ApolloServer } from 'apollo-server-koa'
 import 'reflect-metadata'
 import { buildSchema } from 'type-graphql'
@@ -17,13 +17,14 @@ import { socketEvents } from './utils/sockets'
 import { UserResolver } from './features/user/resolver'
 import { CreatorResolver } from './features/creator/resolver'
 import { CampaignResolver } from './features/campaign/resolver'
-import { ConversationResolver } from './features/conversation/resolver'
+import { ConversationResolver, MessageResolver } from './features/conversation/resolver'
 import { BrandResolver } from './features/brand/resolver'
 import { CollabResolver } from './features/collab/resolver'
 import { SessionResolver } from './features/session/resolver'
 import { YoutuberResolver } from './features/youtuber/resolver'
 import { MyContext, Session } from './features/session/model'
 import { customAuthChecker } from './middleware/auth'
+import { ReviewResolver } from './features/review/resolver'
 
 async function main(): Promise<void> {
   // Create instances and configs./middleware/auth
@@ -33,7 +34,7 @@ async function main(): Promise<void> {
   app.context.io = io // Attach socket.io to context for easy access
   const router = new Router()
   dotenv.config()
-  const sessionConfig = { maxAge: 86400000 * 7, renew: true } // Week-long and renewed sessions
+  const sessionConfig: Partial<session.opts> = { maxAge: 86400000 * 7, renew: true } // Week-long and renewed sessions
 
   // Connect database
   const mongoURI = process.env.DB_URI
@@ -46,18 +47,20 @@ async function main(): Promise<void> {
 
   // Settings
   const PORT = process.env.PORT || 5000
-  app.keys = ['my-cool-key']
+  app.keys = [process.env.SESSION_SECRET]
 
   // Setup GraphQL schema
   const schema = await buildSchema({
     resolvers: [
       BrandResolver,
-      CreatorResolver,
       CampaignResolver,
-      ConversationResolver,
       CollabResolver,
-      UserResolver,
+      ConversationResolver,
+      CreatorResolver,
+      MessageResolver,
+      ReviewResolver,
       SessionResolver,
+      UserResolver,
       YoutuberResolver,
     ],
     authChecker: customAuthChecker,

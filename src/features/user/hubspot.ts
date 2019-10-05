@@ -1,5 +1,5 @@
 import Hubspot from 'hubspot'
-import * as dotenv from 'dotenv'
+import dotenv from 'dotenv'
 import { User, UserModel } from './model'
 
 // Prepare env variables
@@ -45,10 +45,6 @@ function getUserHubspotProperties(user: User): IHubspotProperty[] {
     {
       property: 'is_premium',
       value: user.plan === 'premium',
-    },
-    {
-      property: 'phone',
-      value: user.phone,
     },
     {
       property: 'company',

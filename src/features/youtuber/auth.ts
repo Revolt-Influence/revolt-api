@@ -118,8 +118,7 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
   const rawResponses = await Promise.all([agePromise, genderPromise, countryPromise])
 
   // Parse basic channel data
-  const channel =
-    channelsList && channelsList.data && channelsList.data.items && channelsList.data.items[0]
+  const channel = channelsList.data.items && channelsList.data.items[0]
   if (!channel || !channel.statistics || !channel.snippet || !channel.contentDetails) {
     throw new Error(errorNames.invalidPayload)
   }
@@ -135,22 +134,15 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     audienceAge: age,
     audienceGender: gender,
     audienceCountry: country,
-    viewCount: parseInt(viewCount as string),
-    subscriberCount: parseInt(subscriberCount as string),
-    videoCount: parseInt(videoCount as string),
-    channelId: channel.id as string,
-    name: channel.snippet.title as string,
-    thumbnail:
-      (channel.snippet.thumbnails &&
-        channel.snippet.thumbnails.default &&
-        (channel.snippet.thumbnails.default.url as string)) ||
-      '',
-    country: channel.snippet.country as string,
-    language: channel.snippet.defaultLanguage as string,
-    uploadsPlaylistId:
-      (channel.contentDetails.relatedPlaylists &&
-        (channel.contentDetails.relatedPlaylists.uploads as string)) ||
-      '',
+    viewCount: parseInt(viewCount),
+    subscriberCount: parseInt(subscriberCount),
+    videoCount: parseInt(videoCount),
+    channelId: channel.id,
+    name: channel.snippet.title,
+    thumbnail: channel.snippet.thumbnails.default.url,
+    country: channel.snippet.country,
+    language: channel.snippet.defaultLanguage,
+    uploadsPlaylistId: channel.contentDetails.relatedPlaylists.uploads,
     url:
       channel.snippet.customUrl == null
         ? `https://www.youtube.com/channel/${channel.id}`

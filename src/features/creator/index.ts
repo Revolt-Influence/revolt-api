@@ -1,5 +1,5 @@
-import * as bcrypt from 'bcrypt'
-import * as superagent from 'superagent'
+import bcrypt from 'bcrypt'
+import superagent from 'superagent'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
@@ -53,21 +53,10 @@ async function getCreatorsPage(
 }
 
 async function createCreator(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {
-  // Check if data is complete
-  if (
-    creator == null ||
-    creator.gender == null ||
-    creator.country == null ||
-    creator.language == null ||
-    creator.birthYear == null
-  ) {
-    throw new CustomError(400, errorNames.invalidPayload)
-  }
-
   // Make sure creator or a brand with same email doesn't already exist
   const existingCreator = await CreatorModel.findOne({ email: creator.email })
   const existingUser = await UserModel.findOne({ email: creator.email })
-  if (existingCreator != null || existingUser != null) {
+  if (existingCreator || existingUser) {
     console.log('Could not create ', creator.email)
     throw new CustomError(400, errorNames.creatorAlreadyExists)
   }
@@ -103,13 +92,12 @@ async function saveCreatorProfile(
   return creator
 }
 
-async function updateCreatorContactInfo(
+async function updateCreatorEmail(
   creatorId: mongoose.Types.ObjectId,
-  email: string,
-  phone: string
+  email: string
 ): Promise<DocumentType<Creator>> {
   // Check if there is payload
-  if (email == null || phone == null) {
+  if (email == null) {
     throw new CustomError(400, errorNames.invalidPayload)
   }
   // Check if email is available
@@ -122,7 +110,6 @@ async function updateCreatorContactInfo(
   // Find and update creator
   const creator = await CreatorModel.findById(creatorId)
   creator.email = email
-  creator.phone = phone
   await creator.save()
   return creator
 }
@@ -218,7 +205,7 @@ async function changeCreatorPassword({
 export {
   createCreator,
   saveCreatorProfile,
-  updateCreatorContactInfo,
+  updateCreatorEmail,
   getCreatorsPage,
   setCreatorStatus,
   getAmbassadorStatus,

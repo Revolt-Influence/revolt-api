@@ -1,4 +1,4 @@
-import * as mongoose from 'mongoose'
+import mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, modelOptions } from '@hasezoey/typegoose'
 import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
 import { Creator } from '../creator/model'
@@ -27,22 +27,21 @@ class User {
   @prop()
   switchedToPremiumAt?: Date
 
-  @Field({ description: 'Phone number is used for demo, customer support and conflicts' })
-  @prop()
-  phone: string
-
   @prop()
   password: string
 
   @Field(() => Plan, { description: 'Whether the user has paid' })
-  @prop({ enum: Plan })
+  @prop({ enum: Plan, default: Plan.FREE })
   plan: Plan
 
   @Field({ description: 'Got from Stripe, used to tell what card the user used', nullable: true })
   @prop()
   creditCardLast4?: string
 
-  @Field({ description: 'Used to retrieve a Stripe customer when he gets back to Premium' })
+  @Field({
+    description: 'Used to retrieve a Stripe customer when he gets back to Premium',
+    nullable: true,
+  })
   @prop()
   stripeCustomerId: string
 
@@ -63,6 +62,14 @@ class User {
   @Field(() => Creator, { description: 'The creator who signed him up', nullable: true })
   @prop({ ref: Creator })
   ambassador?: Ref<Creator>
+
+  @Field({ description: 'Only created for Premium users', nullable: true })
+  @prop()
+  firstName?: string
+
+  @Field({ description: 'Only created for Premium users', nullable: true })
+  @prop()
+  lastName?: string
 
   @Field(() => Date)
   createdAt: Readonly<Date>

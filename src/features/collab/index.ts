@@ -42,7 +42,7 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
   })
 }
 
-async function notifyCollabRefused(collab: DocumentType<Collab>): Promise<void> {
+async function notifyCollabDenied(collab: DocumentType<Collab>): Promise<void> {
   const campaign = await getCampaignById(collab.campaign as mongoose.Types.ObjectId)
   await emailService.send({
     template: 'collabRefused',
@@ -79,7 +79,7 @@ async function reviewCollab(
   // Act based on the brand's decision
   const now = Date.now()
   switch (action) {
-    case 'accept':
+    case ReviewCollabDecision.ACCEPT:
       // Send an email to the creator in the background
       notifyCollabAccepted(collab)
       // Send message in the background
@@ -92,9 +92,9 @@ async function reviewCollab(
       // Mark as accepted
       collab.status = CollabStatus.ACCEPTED
       break
-    case 'refuse':
+    case ReviewCollabDecision.DENY:
       // Send an email to the creator in the background
-      notifyCollabRefused(collab)
+      notifyCollabDenied(collab)
       // Archive the conversation
       const conversation = await ConversationModel.findById(collab.conversation)
       conversation.isArchived = true
@@ -108,7 +108,7 @@ async function reviewCollab(
       })
       collab.status = CollabStatus.DENIED
       break
-    case 'markAsSent':
+    case ReviewCollabDecision.MARK_AS_SENT:
       collab.status = CollabStatus.SENT
       // Send message in the background
       sendMessage({
@@ -123,40 +123,23 @@ async function reviewCollab(
     // Should not happen, but added just in case
   }
 
-  const updatedCollab = await collab.save()
-  const populatedUpdatedCollab = await CollabModel.findById(updatedCollab._id).populate({
-    path: 'creator',
-    select: 'email phone birthday gender country name picture',
-    populate: [
-      {
-        path: 'youtube',
-      },
-    ],
-  })
-  return populatedUpdatedCollab
+  await collab.save()
+  return collab
 }
 
-async function getCampaignCollabs(campaignId: string): Promise<DocumentType<Collab>[]> {
-  const collabs = await CollabModel.find({ campaign: campaignId }).populate([
-    {
-      path: 'creator',
-      select: 'email phone birthday gender country name picture',
-      populate: [
-        {
-          path: 'youtube',
-        },
-      ],
-    },
-    { path: 'reviews' },
-  ])
+async function getCampaignCollabs(
+  campaignId: mongoose.Types.ObjectId
+): Promise<DocumentType<Collab>[]> {
+  const collabs = await CollabModel.find({ campaign: campaignId })
   return collabs
 }
 
-async function getCreatorCollabs(creatorId: string): Promise<DocumentType<Collab>[]> {
+async function getCreatorCollabs(
+  creatorId: mongoose.Types.ObjectId
+): Promise<DocumentType<Collab>[]> {
   const collabs = await CollabModel.find({ creator: creatorId })
     .where('status')
     .ne('refused')
-    .populate('reviews')
   return collabs
 }
 

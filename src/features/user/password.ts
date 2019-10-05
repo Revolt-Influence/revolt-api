@@ -1,5 +1,5 @@
-import * as crypto from 'crypto'
-import * as bcrypt from 'bcrypt'
+import crypto from 'crypto'
+import bcrypt from 'bcrypt'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { UserModel, User } from './model'
 import { CustomError, errorNames } from '../../utils/errors'

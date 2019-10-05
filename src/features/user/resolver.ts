@@ -1,10 +1,21 @@
-import { Resolver, Query, Arg, InputType, Field, Ctx, Mutation, Authorized } from 'type-graphql'
-import { mongoose } from '@hasezoey/typegoose'
+import {
+  Resolver,
+  Query,
+  Arg,
+  InputType,
+  Field,
+  Ctx,
+  Mutation,
+  Authorized,
+  FieldResolver,
+  Root,
+} from 'type-graphql'
+import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import { User, UserModel, Plan } from './model'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel } from '../creator/model'
 import { Session, createDefaultSession, SessionType, MyContext } from '../session/model'
-import { createUser, updateUserContactInfo } from '.'
-import { changeUserPassword } from './password'
+import { createUser, updateUserEmail } from '.'
+import { changeUserPassword, sendResetPasswordEmail, resetPasswordViaEmail } from './password'
 import { AuthRole } from '../../middleware/auth'
 import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
 
@@ -12,9 +23,6 @@ import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
 class SignupUserInput {
   @Field({ description: 'Used for login and notification and marketing emails' })
   email: string
-
-  @Field({ description: 'Phone number is used for demo, customer support and conflicts' })
-  phone: string
 
   @Field({ description: 'The password in plaintext, hashed on server' })
   password: string
@@ -26,7 +34,7 @@ class SignupUserInput {
   ambassador?: string
 }
 
-@Resolver(User)
+@Resolver(() => User)
 class UserResolver {
   @Query(() => User, { nullable: true, description: 'Get user by ID or email' })
   async user(
@@ -76,13 +84,9 @@ class UserResolver {
   }
 
   @Authorized(AuthRole.USER)
-  @Mutation(() => User, { description: 'Change user email and/or phone' })
-  async updateUserContactInfo(
-    @Arg('newEmail') newEmail: string,
-    @Arg('newPhone') newPhone: string,
-    @Ctx() ctx: MyContext
-  ): Promise<User> {
-    const updatedUser = await updateUserContactInfo(ctx.state.user.user._id, newEmail, newPhone)
+  @Mutation(() => User, { description: 'Change user email' })
+  async updateUserEmail(@Arg('newEmail') newEmail: string, @Ctx() ctx: MyContext): Promise<User> {
+    const updatedUser = await updateUserEmail(ctx.state.user.user._id, newEmail)
     return updatedUser
   }
 
@@ -118,6 +122,29 @@ class UserResolver {
   ): Promise<User> {
     const updatedUser = await updateCreditCard(ctx.state.user.user._id, newPaymentToken)
     return updatedUser
+  }
+
+  @Mutation(() => String, {
+    description: 'Send reset password link by email if creator or user forgot password',
+  })
+  async sendResetPasswordEmail(@Arg('email') email: string): Promise<string> {
+    await sendResetPasswordEmail(email)
+    return 'Email sent'
+  }
+
+  @Mutation(() => String, { description: 'Reset password from forgot password email link' })
+  async resetPasswordViaEmail(
+    @Arg('token') token: string,
+    @Arg('newPassword') newPassword: string
+  ): Promise<string> {
+    await resetPasswordViaEmail(token, newPassword)
+    return 'Password changed'
+  }
+
+  @FieldResolver()
+  async ambassador(@Root() user: DocumentType<User>): Promise<Creator> {
+    const ambassador = await CreatorModel.findById(user.ambassador)
+    return ambassador
   }
 }
 

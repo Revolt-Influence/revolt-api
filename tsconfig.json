@@ -11,7 +11,8 @@
         ],
         "resolveJsonModule": true,
         "experimentalDecorators": true,
-        "emitDecoratorMetadata": true
+        "emitDecoratorMetadata": true,
+        "esModuleInterop": true
     },
     "include": [
         "./src/**/*.ts",

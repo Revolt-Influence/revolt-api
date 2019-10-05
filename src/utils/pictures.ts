@@ -1,4 +1,4 @@
-import * as superagent from 'superagent'
+import superagent from 'superagent'
 
 type CloudinaryPreset = 'creator_picture' | 'stories' | 'campaign_gift' | 'brand_logo'
 

@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { User, UserModel } from './model'
 import { errorNames, CustomError } from '../../utils/errors'
@@ -38,10 +38,9 @@ async function createUser(user: SignupUserInput): Promise<DocumentType<User>> {
   return createdUser
 }
 
-async function updateUserContactInfo(
+async function updateUserEmail(
   userId: mongoose.Types.ObjectId,
-  newEmail: string,
-  newPhone: string
+  newEmail: string
 ): Promise<DocumentType<User>> {
   // Find and update user
   const user = await UserModel.findById(userId)
@@ -56,7 +55,6 @@ async function updateUserContactInfo(
   }
 
   user.email = newEmail
-  user.phone = newPhone
   await user.save()
 
   return user
@@ -64,4 +62,4 @@ async function updateUserContactInfo(
 
 export * from './billing'
 export * from './password'
-export { createUser, updateUserContactInfo }
+export { createUser, updateUserEmail }

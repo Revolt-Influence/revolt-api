@@ -1,9 +1,7 @@
 extends ../layout.pug
 
 block content
-  p Bonjour #{brandName} 👋
+  p Hi #{brandName} 👋
   br
-  p @#{username} a posté ses revues de votre produit #{productName}. Retrouvez-les sur l'onglet "Revues" sur votre dashboard de campagne.
-  a(href=dashboardLink) 👉 Voir les revues 👈
-  br
-  p À bientôt sur Revolt
+  p #{username} has posted a review of #{productName}. You can find it in the "Reviews" tab of your campaign dashboard.
+  a(href=dashboardLink) 👉 See the reviews 👈

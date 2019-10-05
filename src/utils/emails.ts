@@ -1,6 +1,6 @@
-import * as nodemailer from 'nodemailer'
-import * as Email from 'email-templates'
-import * as mailgun from 'nodemailer-mailgun-transport'
+import nodemailer from 'nodemailer'
+import Email from 'email-templates'
+import mailgun from 'nodemailer-mailgun-transport'
 
 const mailgunSettings = {
   auth: {
