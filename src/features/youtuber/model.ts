@@ -86,9 +86,11 @@ class YoutubeAudience {
   @arrayProp({ _id: false, items: AudienceMetric, type: AudienceMetric })
   countries: AudienceMetric[]
 
+  @Field({ description: 'Percentage of male subscribers, between 0 and 100' })
   @prop(percentageOptions)
   malePercentage: number
 
+  @Field({ description: 'Percentage of female subscribers, between 0 and 100' })
   @prop(percentageOptions)
   femalePercentage: number
 }

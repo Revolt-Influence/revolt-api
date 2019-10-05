@@ -1,9 +1,9 @@
 extends ../layout.pug
 
 block content
-  p Bonjour #{username} 👋
-  p Vous avez un nouveau message de #{senderUsername} sur Revolt. Le voici :
+  p Hi #{username} 👋
+  p You have a new message from #{senderUsername} on Revolt. Here it is:
   br
   p(style="white-space: pre-wrap;") « #{message} »
   br
-  a.btn.btn-primary(href=link target='_blank') Répondre à #{senderUsername}
+  a.btn.btn-primary(href=link target='_blank') Reply to #{senderUsername}
