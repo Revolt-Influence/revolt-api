@@ -5,7 +5,7 @@ import { Authorized, Field, ID, InputType, ObjectType, registerEnumType } from '
 import { AuthRole } from '../../middleware/auth'
 import { Brand } from '../brand/model'
 import { Collab } from '../collab/model'
-import { AgeGroup, Gender } from '../creator/model'
+import { AgeGroup, Gender, GameCategory } from '../creator/model'
 import { Review } from '../review/model'
 import { User } from '../user/model'
 
@@ -21,31 +21,6 @@ export enum TrackingProvider {
 registerEnumType(TrackingProvider, {
   name: 'TrackingProvider',
   description: 'Platforms that provide analytics for game',
-})
-
-export enum GameCategory {
-  RPG = 'RPG',
-  STRATEGY = 'Strategy',
-  ACTION = 'Action',
-  ADVENTURE = 'Adventure',
-  SIMULATION = 'Simulation',
-  HORROR = 'Horror',
-  SPORTS = 'Sports',
-  MMO = 'MMO',
-  PARTY_GAME = 'Party game',
-  INDIE = 'Indie',
-  PLATFORMER = 'Platformer',
-  RETRO = 'Retro',
-  SHOOTER = 'Shooter',
-  AR_VR = 'AR/VR',
-  SURVIVAL = 'Survival',
-  ARCADE = 'Arcade',
-  ROGUELIKE = 'Roguelike',
-  PUZZLE = 'Puzzle',
-}
-registerEnumType(GameCategory, {
-  name: 'GameCategory',
-  description: 'Family of games',
 })
 
 @ObjectType({ description: 'What a creator can receive' })

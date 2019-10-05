@@ -2,7 +2,6 @@ import { getModelForClass, prop, Ref, modelOptions, arrayProp } from '@hasezoey/
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Youtuber } from '../youtuber/model'
-import { GameCategory } from '../campaign/model'
 
 enum CreatorStatus {
   UNVERIFIED = 'unverified',
@@ -61,6 +60,31 @@ registerEnumType(Language, {
   description: 'Spoken language or dialect',
 })
 
+export enum GameCategory {
+  RPG = 'RPG',
+  STRATEGY = 'Strategy',
+  ACTION = 'Action',
+  ADVENTURE = 'Adventure',
+  SIMULATION = 'Simulation',
+  HORROR = 'Horror',
+  SPORTS = 'Sports',
+  MMO = 'MMO',
+  PARTY_GAME = 'Party game',
+  INDIE = 'Indie',
+  PLATFORMER = 'Platformer',
+  RETRO = 'Retro',
+  SHOOTER = 'Shooter',
+  AR_VR = 'AR/VR',
+  SURVIVAL = 'Survival',
+  ARCADE = 'Arcade',
+  ROGUELIKE = 'Roguelike',
+  PUZZLE = 'Puzzle',
+}
+registerEnumType(GameCategory, {
+  name: 'GameCategory',
+  description: 'Family of games',
+})
+
 @ObjectType({ description: 'Someone who creates content and has a community' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 class Creator {
@@ -71,17 +95,16 @@ class Creator {
   @prop({ lowercase: true, trim: true, unique: true })
   email: string
 
-  @Field({ description: 'Cloudinary URL of a picture got from user upload or a social network' })
+  @Field({
+    description: 'Cloudinary URL of a picture got from user upload or a social network',
+    nullable: true,
+  })
   @prop()
-  picture: string
+  picture?: string
 
-  @Field({ description: 'Creator display name, can be a full name or a pseudo' })
+  @Field({ description: 'Creator display name, can be a full name or a pseudo', nullable: true })
   @prop()
-  name: string
-
-  @Field({ description: 'Where the creator comes from' })
-  @prop()
-  country: string
+  name?: string
 
   @Field({ description: 'Year of birth, used to get age approximation and ensure he is 13+' })
   @prop()
