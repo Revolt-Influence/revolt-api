@@ -17,7 +17,7 @@ registerEnumType(ReviewCollabDecision, {
 })
 
 enum CollabStatus {
-  APPLIED = 'applied',
+  REQUEST = 'request',
   ACCEPTED = 'accepted',
   SENT = 'sent',
   DENIED = 'denied',

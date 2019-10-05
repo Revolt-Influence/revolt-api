@@ -23,7 +23,7 @@ async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentT
   // Prepare campaign
   const campaign = new CampaignModel({
     owner,
-    name: 'Ma nouvelle campagne',
+    name: 'My new campaign',
     brand: brand._id,
   } as Partial<Campaign>)
   // Save campaign to database
