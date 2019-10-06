@@ -26,6 +26,7 @@ import { User } from '../user/model'
 import { linkYoutubeChannel } from '../youtuber'
 import { Creator, CreatorModel, CreatorStatus, Language, GameCategory } from './model'
 import { Youtuber, YoutuberModel } from '../youtuber/model'
+import { createSessionId } from '../session'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -87,11 +88,11 @@ class CreatorResolver {
     // Create user
     const createdCreator = await createCreator(creator)
     // Generate session ID to help Apollo Client cache data
-    const { sessionId } = createDefaultSession()
+    const sessionId = createSessionId(createdCreator._id)
     const newSessionData: Session = {
       sessionId,
       isLoggedIn: true,
-      sessionType: SessionType.BRAND,
+      sessionType: SessionType.CREATOR,
       creator: createdCreator,
     }
     // Save session data in a cookie

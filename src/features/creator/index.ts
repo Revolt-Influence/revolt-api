@@ -25,7 +25,7 @@ async function getCreatorsPage(
   const safePage = page < 1 ? 1 : page
   // Optionally filter by status
   const query = {} as any
-  if (!status) {
+  if (status) {
     query.status = status
   }
   if (onlyWithLinkedNetworks) {
@@ -118,15 +118,10 @@ async function setCreatorStatus(
   creatorId: mongoose.Types.ObjectId,
   newStatus: CreatorStatus
 ): Promise<DocumentType<Creator>> {
+  // Save new status
   const creator = await CreatorModel.findById(creatorId)
   creator.status = newStatus
   await creator.save()
-
-  if (newStatus === CreatorStatus.BLOCKED) {
-    // Get rid of all unaccepted collabs and conversations
-    await CollabModel.deleteMany({ creator: creatorId, status: CollabStatus.APPLIED })
-    await ConversationModel.deleteMany({ creator: creatorId })
-  }
 
   // Send email notification to creator in the background
   emailService.send({

@@ -9,7 +9,7 @@ import { Creator, CreatorModel } from '../creator/model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Session, SessionType, createDefaultSession } from './model'
 
-function createSessionId(id: string | mongoose.Types.ObjectId): string {
+export function createSessionId(id: string | mongoose.Types.ObjectId): string {
   return `session_${id}`
 }
 

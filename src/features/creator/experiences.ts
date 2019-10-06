@@ -26,21 +26,12 @@ async function getExperiencesPage(
 
   // Promise to get paginated results
   const experiencesPromise = CampaignModel.find(query)
-    .where('settings')
-    .ne(null)
-    .populate({
-      path: 'settings.brand',
-      model: 'Brand',
-    })
-    .select('_id name owner settings creationDate')
     .sort({ creationDate: 'descending' })
     .skip((safePage - 1) * EXPERIENCES_PER_PAGE)
     .limit(EXPERIENCES_PER_PAGE)
     .exec()
   // Promise to count all unpaginated results
   const totalResultsPromise = CampaignModel.find(query)
-    .where('settings')
-    .ne(null)
     .countDocuments()
     .exec()
   // Run results and results count in parallel
@@ -114,7 +105,7 @@ async function applyToExperience(
   const collab = new CollabModel({
     campaign: experienceId,
     creator: creatorId,
-    status: CollabStatus.APPLIED,
+    status: CollabStatus.REQUEST,
     deadline: null,
     message,
     conversation: conversation._id,

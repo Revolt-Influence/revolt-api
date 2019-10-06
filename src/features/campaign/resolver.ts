@@ -21,12 +21,13 @@ import {
   updateCampaignBrief,
   updateCampaignProduct,
   updateCampaignTargetAudience,
+  getAdminCampaigns,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { Brand, BrandModel } from '../brand/model'
 import { getExperiencesPage } from '../creator/experiences'
-import { MyContext } from '../session/model'
+import { MyContext, SessionType } from '../session/model'
 import { Campaign, CampaignModel, CampaignProduct, TargetAudience, TrackingProvider } from './model'
 import { User, UserModel } from '../user/model'
 import { CollabModel, Collab } from '../collab/model'
@@ -64,10 +65,15 @@ class CampaignResolver {
     @Ctx() ctx: MyContext,
     @Arg('page', { defaultValue: 1, nullable: true }) page?: number
   ): Promise<PaginatedCampaignResponse> {
-    if (ctx.state.user.sessionType === 'brand') {
+    if (ctx.state.user.sessionType === SessionType.BRAND) {
       // Show brand campaigns
-      const paginatedCampaigns = await getUserCampaigns(ctx.state.user.user._id)
-      return paginatedCampaigns
+      const { user } = ctx.state.user
+      if (user.isAdmin) {
+        // Show all campaigns to admins
+        return getAdminCampaigns(user._id)
+      }
+      // Normal user campaigns
+      return getUserCampaigns(user._id)
     }
     // Show creator experiences
     const paginatedExperiences = await getExperiencesPage(ctx.state.user.creator._id, page)
@@ -164,17 +170,17 @@ class CampaignResolver {
 
   @FieldResolver()
   async collabs(@Root() campaign: DocumentType<Campaign>): Promise<Collab[]> {
-    const collabs = await CollabModel.find()
-      .where('_id')
-      .in(campaign.collabs)
+    const collabs = await CollabModel.find({ campaign: campaign._id })
     return collabs
   }
 
   @FieldResolver()
   async reviews(@Root() campaign: DocumentType<Campaign>): Promise<Review[]> {
+    const collabs = await CollabModel.find({ campaign: campaign._id })
+    const reviewIds = collabs.filter(_collab => _collab.review != null).map(_collab => _collab._id)
     const reviews = await ReviewModel.find()
       .where('_id')
-      .in(campaign.reviews)
+      .in(reviewIds)
     return reviews
   }
 }

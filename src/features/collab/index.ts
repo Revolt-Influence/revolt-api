@@ -85,9 +85,9 @@ async function reviewCollab(
       // Send message in the background
       sendMessage({
         ...messageOptions,
-        text: `✅ ${(relatedCampaign.brand as Brand).name} a accepté la collab pour la campagne "${
-          relatedCampaign.name
-        }"`,
+        text: `✅ ${
+          (relatedCampaign.brand as Brand).name
+        } has accepted your collab for the campaign "${relatedCampaign.name}"`,
       })
       // Mark as accepted
       collab.status = CollabStatus.ACCEPTED
@@ -102,9 +102,9 @@ async function reviewCollab(
       // Send message in the background
       sendMessage({
         ...messageOptions,
-        text: `😞 ${(relatedCampaign.brand as Brand).name} a refusé la collab pour la campagne "${
-          relatedCampaign.name
-        }"`,
+        text: `😞 ${
+          (relatedCampaign.brand as Brand).name
+        } has denied your campaign for the collab "${relatedCampaign.name}"`,
       })
       collab.status = CollabStatus.DENIED
       break
@@ -113,7 +113,7 @@ async function reviewCollab(
       // Send message in the background
       sendMessage({
         ...messageOptions,
-        text: `🎁 ${(relatedCampaign.brand as Brand).name} a envoyé le produit ${
+        text: `🎁 ${(relatedCampaign.brand as Brand).name} has sent the game ${
           relatedCampaign.product.name
         }`,
       })

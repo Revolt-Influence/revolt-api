@@ -57,6 +57,7 @@ class Conversation {
 const ConversationModel = getModelForClass(Conversation)
 
 @ObjectType({ description: 'A message is part of a conversation' })
+@modelOptions({ schemaOptions: { timestamps: true } })
 class Message {
   @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
