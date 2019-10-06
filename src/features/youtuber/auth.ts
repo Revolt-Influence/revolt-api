@@ -59,9 +59,6 @@ async function checkGoogleToken(code: string): Promise<IGoogleData> {
   try {
     const { tokens } = await oauth.getToken(code)
     oauth.setCredentials(tokens)
-    if (!tokens.access_token || !tokens.refresh_token || !tokens.id_token) {
-      throw new Error(errorNames.invalidToken)
-    }
     const ticket = await oauth.verifyIdToken({
       idToken: tokens.id_token,
       audience: CLIENT_ID,
@@ -77,7 +74,6 @@ async function checkGoogleToken(code: string): Promise<IGoogleData> {
       googleRefreshToken: tokens.refresh_token,
     }
   } catch (error) {
-    console.log(error)
     // Handle invalid token
     throw new CustomError(400, errorNames.invalidToken)
   }

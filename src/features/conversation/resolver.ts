@@ -51,8 +51,8 @@ class ConversationResolver {
   ): Promise<PaginatedConversationResponse> {
     const getConversations = () => {
       // Creators
-      if (ctx.state.user.sessionType === 'creator') {
-        return getCreatorConversations(ctx.state.user.user._id, page)
+      if (ctx.state.user.sessionType === SessionType.CREATOR) {
+        return getCreatorConversations(ctx.state.user.creator._id, page)
       }
       // Brand users
       if (!ctx.state.user.user.isAdmin) {

@@ -1,6 +1,6 @@
 import superagent from 'superagent'
 
-type CloudinaryPreset = 'creator_picture' | 'stories' | 'campaign_gift' | 'brand_logo'
+type CloudinaryPreset = 'creator_picture' | 'stories' | 'campaign_product' | 'brand_logo'
 
 async function uploadToCloudinary(
   picture: string | File,
