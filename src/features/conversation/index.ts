@@ -76,8 +76,12 @@ async function sendMessage({
     }
   }
 
-  // Return saved message
-  return message
+  // Return saved message (populates are important since this does not go through the GQL schema)
+  return MessageModel.findById(message._id).populate([
+    { path: 'conversation', select: '_id' },
+    { path: 'brandAuthor', select: '_id' },
+    { path: 'creatorAuthor', select: '_id' },
+  ])
 }
 
 async function sendMessageEmailNotification({

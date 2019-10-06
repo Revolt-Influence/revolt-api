@@ -124,18 +124,16 @@ class ConversationResolver {
 
   @FieldResolver()
   async messages(@Root() conversation: DocumentType<Conversation>): Promise<Message[]> {
-    const messages = await MessageModel.find()
-      .where('_id')
-      .in(conversation.messages)
+    // TODO: pagination instead of arbitrary limit
+    const messages = await MessageModel.find({ conversation: conversation._id })
+      .sort({ sentAt: -1 })
+      .limit(50)
     return messages
   }
 
   @FieldResolver()
   async messagesCount(@Root() conversation: DocumentType<Conversation>): Promise<number> {
-    const messagesCount = await MessageModel.find()
-      .where('_id')
-      .in(conversation.messages)
-      .count()
+    const messagesCount = await MessageModel.find({ conversation: conversation._id }).count()
     return messagesCount
   }
 }

@@ -170,17 +170,17 @@ class CampaignResolver {
 
   @FieldResolver()
   async collabs(@Root() campaign: DocumentType<Campaign>): Promise<Collab[]> {
-    const collabs = await CollabModel.find()
-      .where('_id')
-      .in(campaign.collabs)
+    const collabs = await CollabModel.find({ campaign: campaign._id })
     return collabs
   }
 
   @FieldResolver()
   async reviews(@Root() campaign: DocumentType<Campaign>): Promise<Review[]> {
+    const collabs = await CollabModel.find({ campaign: campaign._id })
+    const reviewIds = collabs.filter(_collab => _collab.review != null).map(_collab => _collab._id)
     const reviews = await ReviewModel.find()
       .where('_id')
-      .in(campaign.reviews)
+      .in(reviewIds)
     return reviews
   }
 }

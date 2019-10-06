@@ -37,10 +37,7 @@ async function getCampaignById(
   campaignId: mongoose.Types.ObjectId
 ): Promise<DocumentType<Campaign>> {
   // Find the right campaign
-  const campaign = await CampaignModel.findById(campaignId).populate({
-    path: 'settings.brand',
-    model: 'Brand',
-  })
+  const campaign = await CampaignModel.findById(campaignId).populate('brand')
   // Check if exists
   if (campaign == null) {
     throw new CustomError(404, errorNames.campaignNotFound)
