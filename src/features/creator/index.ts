@@ -124,7 +124,7 @@ async function setCreatorStatus(
 
   if (newStatus === CreatorStatus.BLOCKED) {
     // Get rid of all unaccepted collabs and conversations
-    await CollabModel.deleteMany({ creator: creatorId, status: CollabStatus.APPLIED })
+    await CollabModel.deleteMany({ creator: creatorId, status: CollabStatus.REQUEST })
     await ConversationModel.deleteMany({ creator: creatorId })
   }
 

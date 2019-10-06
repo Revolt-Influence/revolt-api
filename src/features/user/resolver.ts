@@ -18,6 +18,7 @@ import { createUser, updateUserEmail } from '.'
 import { changeUserPassword, sendResetPasswordEmail, resetPasswordViaEmail } from './password'
 import { AuthRole } from '../../middleware/auth'
 import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
+import { createSessionId } from '../session'
 
 @InputType()
 class SignupUserInput {
@@ -55,7 +56,7 @@ class UserResolver {
     // Create user
     const createdUser = await createUser(user)
     // Generate session ID to help Apollo Client cache data
-    const { sessionId } = createDefaultSession()
+    const sessionId = createSessionId(createdUser._id)
     const newSessionData: Session = {
       sessionId,
       isLoggedIn: true,

@@ -114,7 +114,7 @@ async function applyToExperience(
   const collab = new CollabModel({
     campaign: experienceId,
     creator: creatorId,
-    status: CollabStatus.APPLIED,
+    status: CollabStatus.REQUEST,
     deadline: null,
     message,
     conversation: conversation._id,
