@@ -76,11 +76,13 @@ async function main(): Promise<void> {
   app.use(session(sessionConfig, app))
   app.use(passport.initialize())
   app.use(passport.session())
+  app.use(router.routes())
 
   // Create Apollo Server instance
   const apolloServer = new ApolloServer({
     schema,
     context: ({ ctx }: { ctx: Koa.ParameterizedContext<Session, MyContext> }) => ctx,
+    playground: true,
     introspection: true,
   })
   // Link Apollo server and Koa app
