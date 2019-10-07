@@ -19,7 +19,7 @@ import { submitCreatorReview, BaseReview, enrichReview } from '../review'
 import { Collab, ReviewCollabDecision, CollabModel } from './model'
 import { AuthRole } from '../../middleware/auth'
 import { MyContext } from '../session/model'
-import { applyToExperience } from '../creator/experiences'
+import { applyToCampaign } from '../creator/campaigns'
 import { Review, ReviewFormat, ReviewModel } from '../review/model'
 import { Creator, CreatorModel } from '../creator/model'
 import { Campaign, CampaignModel } from '../campaign/model'
@@ -51,14 +51,14 @@ class CollabResolver {
   }
 
   @Authorized(AuthRole.CREATOR)
-  @Mutation(() => Collab, { description: 'Creates a collab' })
-  async applyToExperience(
-    @Arg('experienceId') experienceId: string,
+  @Mutation(() => Collab, { description: 'Creates a collab request' })
+  async applyToCampaign(
+    @Arg('campaignId') campaignId: string,
     @Arg('message', { description: 'Motivation message' }) message: string,
     @Ctx() ctx: MyContext
   ): Promise<Collab> {
-    const createdCollab = await applyToExperience(
-      mongoose.Types.ObjectId(experienceId),
+    const createdCollab = await applyToCampaign(
+      mongoose.Types.ObjectId(campaignId),
       ctx.state.user.creator._id,
       message
     )

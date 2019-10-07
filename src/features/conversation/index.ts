@@ -153,7 +153,7 @@ async function sendMessageEmailNotification({
         username: _recipient.name,
         conversationLink: `${process.env.APP_URL}/${
           creatorAuthor != null ? 'creator' : 'brand'
-        }}/experiences/${conversation}`,
+        }}/games/${conversation}`,
         message: text,
       },
       message: {

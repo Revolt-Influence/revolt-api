@@ -32,7 +32,7 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
       productName: campaign.product.name,
-      collabLink: `${process.env.APP_URL}/creator/experiences/${collab._id}`,
+      collabLink: `${process.env.APP_URL}/creator/games/${collab._id}`,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -48,7 +48,7 @@ async function notifyCollabDenied(collab: DocumentType<Collab>): Promise<void> {
     locals: {
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
-      productName: campaign.product,
+      productName: campaign.product.name,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -61,7 +61,7 @@ async function reviewCollab(
   collabId: mongoose.Types.ObjectId,
   action: ReviewCollabDecision
 ): Promise<DocumentType<Collab>> {
-  const collab = await CollabModel.findById(collabId)
+  const collab = await CollabModel.findById(collabId).populate('creator campaign')
   // Common options for all the messages about to be sent
   const messageOptions: MessageOptions = {
     conversationId: collab.conversation as mongoose.Types.ObjectId,

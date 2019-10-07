@@ -148,7 +148,7 @@ async function updateCampaignBrief(
   }
 
   // Save other settings
-  campaign.goal = updatedCampaign.description
+  campaign.goal = updatedCampaign.goal
   campaign.rules = updatedCampaign.rules
   campaign.estimatedBudget = updatedCampaign.estimatedBudget
   campaign.trackingProvider = updatedCampaign.trackingProvider

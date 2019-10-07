@@ -10,44 +10,44 @@ import { getOrCreateConversationByParticipants, sendMessage } from '../conversat
 import { CreatorModel, CreatorStatus } from './model'
 
 // TODO: pagination
-const EXPERIENCES_PER_PAGE = 11 // leave 1 card for ambassador program
+const CAMPAIGNS_PER_PAGE = 11 // leave 1 card for ambassador program
 
-// Fetch all experiences (campaigns) with pagination
-async function getExperiencesPage(
+// Fetch all campaigns (campaigns) with pagination
+export async function getCreatorCampaignsPage(
   creatorId: mongoose.Types.ObjectId,
   page: number = 1
 ): Promise<PaginatedCampaignResponse> {
   const safePage = page < 1 ? 1 : page // Prevent page 0, starts at 1
 
-  // Only active experiences where the creator isn't in a collab
+  // Only active campaigns where the creator isn't in a collab
   const allCreatorCollabs = await CollabModel.find({ creator: creatorId })
-  const allCollabsExperiencesIds = allCreatorCollabs.map(_collab => _collab.campaign)
-  const query = { isReviewed: true, isArchived: false, _id: { $nin: allCollabsExperiencesIds } }
+  const allCollabsCampaignsIds = allCreatorCollabs.map(_collab => _collab.campaign)
+  const query = { isReviewed: true, isArchived: false, _id: { $nin: allCollabsCampaignsIds } }
 
   // Promise to get paginated results
-  const experiencesPromise = CampaignModel.find(query)
+  const campaignsPromise = CampaignModel.find(query)
     .sort({ creationDate: 'descending' })
-    .skip((safePage - 1) * EXPERIENCES_PER_PAGE)
-    .limit(EXPERIENCES_PER_PAGE)
+    .skip((safePage - 1) * CAMPAIGNS_PER_PAGE)
+    .limit(CAMPAIGNS_PER_PAGE)
     .exec()
   // Promise to count all unpaginated results
   const totalResultsPromise = CampaignModel.find(query)
     .countDocuments()
     .exec()
   // Run results and results count in parallel
-  const [experiences, totalResults] = await Promise.all([experiencesPromise, totalResultsPromise])
-  const totalPages = Math.ceil(totalResults / EXPERIENCES_PER_PAGE)
+  const [campaigns, totalResults] = await Promise.all([campaignsPromise, totalResultsPromise])
+  const totalPages = Math.ceil(totalResults / CAMPAIGNS_PER_PAGE)
 
-  return { items: experiences, totalPages, currentPage: page }
+  return { items: campaigns, totalPages, currentPage: page }
 }
 
 async function notifyNewCampaignProposition(
-  experienceId: mongoose.Types.ObjectId,
+  campaignId: mongoose.Types.ObjectId,
   creatorId: mongoose.Types.ObjectId,
   message: string
 ): Promise<void> {
   // Fetch data that's needed in the email
-  const campaign = await getCampaignById(experienceId)
+  const campaign = await getCampaignById(campaignId)
   const creator = await CreatorModel.findById(creatorId)
   // Send the email
   await emailService.send({
@@ -57,7 +57,7 @@ async function notifyNewCampaignProposition(
       productName: campaign.product.name,
       username: creator.name,
       message,
-      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${experienceId}/dashboard?tab=propositions`,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaignId}/dashboard?tab=propositions`,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -66,14 +66,14 @@ async function notifyNewCampaignProposition(
   })
 }
 
-async function applyToExperience(
-  experienceId: mongoose.Types.ObjectId,
+export async function applyToCampaign(
+  campaignId: mongoose.Types.ObjectId,
   creatorId: mongoose.Types.ObjectId,
   message: string
 ): Promise<DocumentType<Collab>> {
   // Check if creator hasn't already applied
   const maybeExistingCollab = await CollabModel.findOne({
-    campaign: experienceId,
+    campaign: campaignId,
     creator: creatorId,
   })
   if (maybeExistingCollab != null) {
@@ -87,7 +87,7 @@ async function applyToExperience(
   }
 
   // Find the collab brand
-  const campaign = await CampaignModel.findById(experienceId)
+  const campaign = await CampaignModel.findById(campaignId)
   // Find or creator matching conversation
   const conversation = await getOrCreateConversationByParticipants(
     creatorId,
@@ -103,7 +103,7 @@ async function applyToExperience(
   })
   // Actually create the collab
   const collab = new CollabModel({
-    campaign: experienceId,
+    campaign: campaignId,
     creator: creatorId,
     status: CollabStatus.REQUEST,
     deadline: null,
@@ -113,9 +113,7 @@ async function applyToExperience(
   await collab.save()
 
   // Notify the brand via email in the background (no async needed)
-  notifyNewCampaignProposition(experienceId, creatorId, message)
+  notifyNewCampaignProposition(campaignId, creatorId, message)
 
   return collab
 }
-
-export { getExperiencesPage, applyToExperience }

@@ -26,7 +26,7 @@ import {
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { Brand, BrandModel } from '../brand/model'
-import { getExperiencesPage } from '../creator/experiences'
+import { getCreatorCampaignsPage } from '../creator/campaigns'
 import { MyContext, SessionType } from '../session/model'
 import { Campaign, CampaignModel, CampaignProduct, TargetAudience, TrackingProvider } from './model'
 import { User, UserModel } from '../user/model'
@@ -38,9 +38,6 @@ type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
 
 @InputType()
 class CampaignBriefInput implements Partial<Campaign> {
-  @Field()
-  name: string
-
   @Field()
   goal: string
 
@@ -58,8 +55,7 @@ class CampaignBriefInput implements Partial<Campaign> {
 class CampaignResolver {
   @Authorized()
   @Query(() => PaginatedCampaignResponse, {
-    description:
-      'Get page of campaigns or experiences depending on whether the session is a brand or a user',
+    description: 'Get page of campaigns, different if brand or a user',
   })
   async campaigns(
     @Ctx() ctx: MyContext,
@@ -75,9 +71,9 @@ class CampaignResolver {
       // Normal user campaigns
       return getUserCampaigns(user._id)
     }
-    // Show creator experiences
-    const paginatedExperiences = await getExperiencesPage(ctx.state.user.creator._id, page)
-    return paginatedExperiences
+    // Show creator campaigns
+    const paginatedCreatorCollabs = await getCreatorCampaignsPage(ctx.state.user.creator._id, page)
+    return paginatedCreatorCollabs
   }
 
   @Query(() => Campaign, { description: 'Get campaign by ID' })
@@ -177,7 +173,9 @@ class CampaignResolver {
   @FieldResolver()
   async reviews(@Root() campaign: DocumentType<Campaign>): Promise<Review[]> {
     const collabs = await CollabModel.find({ campaign: campaign._id })
-    const reviewIds = collabs.filter(_collab => _collab.review != null).map(_collab => _collab._id)
+    const reviewIds = collabs
+      .filter(_collab => _collab.review != null)
+      .map(_collab => _collab.review)
     const reviews = await ReviewModel.find()
       .where('_id')
       .in(reviewIds)

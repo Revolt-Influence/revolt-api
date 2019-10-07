@@ -64,7 +64,7 @@ class CampaignProduct {
 }
 
 export const defaultCampaignProduct: CampaignProduct = {
-  name: '',
+  name: 'My new game',
   pitch: '',
   website: '',
   pictures: [],
@@ -91,7 +91,7 @@ class TargetAudience {
 export const defaultTargetAudience: TargetAudience = {
   gender: Gender.ANY,
   countries: [],
-  ageGroups: [],
+  ageGroups: [AgeGroup.ANY],
 }
 
 @ObjectType({ description: 'A campaign is made by brands to find collabs to promote a product' })

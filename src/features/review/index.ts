@@ -110,7 +110,7 @@ async function submitCreatorReview(
     creatorAuthorId: null,
     isAdminAuthor: true,
     text: `🔥 ${(collab.creator as Creator).name} a posté ses revues pour la campagne ${
-      campaign.name
+      campaign.product.name
     }`,
     isNotification: true,
   })
