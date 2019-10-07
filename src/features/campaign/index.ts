@@ -80,7 +80,7 @@ async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<v
   await emailService.send({
     template: 'newCampaign',
     locals: {
-      campaignName: campaign.name,
+      campaignName: campaign.product.name,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=brief`,
       brandName: (campaign.brand as DocumentType<Brand>).name,
       brandEmail: campaign.owner,
@@ -148,8 +148,7 @@ async function updateCampaignBrief(
   }
 
   // Save other settings
-  campaign.name = updatedCampaign.name
-  campaign.description = updatedCampaign.description
+  campaign.goal = updatedCampaign.goal
   campaign.rules = updatedCampaign.rules
   campaign.estimatedBudget = updatedCampaign.estimatedBudget
   campaign.trackingProvider = updatedCampaign.trackingProvider

@@ -81,6 +81,7 @@ async function main(): Promise<void> {
   const apolloServer = new ApolloServer({
     schema,
     context: ({ ctx }: { ctx: Koa.ParameterizedContext<Session, MyContext> }) => ctx,
+    introspection: true,
   })
   // Link Apollo server and Koa app
   apolloServer.applyMiddleware({ app })

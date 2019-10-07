@@ -16,6 +16,14 @@ export enum TrackingProvider {
   GOOGLE_ANALYTICS = 'Google Analytics',
   GAME_ANALYTICS = 'Game Analytics',
   UNITY_ANALYTICS = 'Unity Analytics',
+  ADJUST = 'Adjust',
+  APPSFLYER = 'AppsFlyer',
+  BUFFPANEL = 'BuffPanel',
+  KOCHAVA = 'Kochava',
+  CUSTOM_LINK = 'Custom tracking link',
+  TENJIN = 'Tenjin',
+  TUNE = 'Tune',
+  SINGULAR = 'Singular',
   OTHER = 'Other tracking provider',
 }
 registerEnumType(TrackingProvider, {
@@ -30,9 +38,9 @@ class CampaignProduct {
   @prop()
   name: string
 
-  @Field({ description: 'Paragraph of info about the product' })
+  @Field({ description: 'Marketing description of the game' })
   @prop()
-  description: string
+  pitch: string
 
   @Field({ description: 'Link to more info about the product' })
   @prop()
@@ -56,8 +64,8 @@ class CampaignProduct {
 }
 
 export const defaultCampaignProduct: CampaignProduct = {
-  name: '',
-  description: '',
+  name: 'My new game',
+  pitch: '',
   website: '',
   pictures: [],
   launchedAt: new Date(),
@@ -83,7 +91,7 @@ class TargetAudience {
 export const defaultTargetAudience: TargetAudience = {
   gender: Gender.ANY,
   countries: [],
-  ageGroups: [],
+  ageGroups: [AgeGroup.ANY],
 }
 
 @ObjectType({ description: 'A campaign is made by brands to find collabs to promote a product' })
@@ -94,13 +102,9 @@ class Campaign {
   @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
-  @Field({ description: 'The campaign name that is promoted to the creators' })
-  @prop({ default: 'My new campaign' })
-  name: string
-
   @Field({ description: 'More info about the campaign and its goals' })
   @prop({ default: '' })
-  description: string
+  goal: string
 
   @Field(() => User, { description: 'The user who created the campaign' })
   @prop({ ref: 'User' })
