@@ -42,7 +42,7 @@ class CampaignBriefInput implements Partial<Campaign> {
   name: string
 
   @Field()
-  description: string
+  goal: string
 
   @Field(() => [String])
   rules: string[]

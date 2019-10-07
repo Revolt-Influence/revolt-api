@@ -54,7 +54,7 @@ async function notifyNewCampaignProposition(
     template: 'newCollabProposition',
     locals: {
       brandName: (campaign.brand as Brand).name,
-      campaignName: campaign.name,
+      productName: campaign.product.name,
       username: creator.name,
       message,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${experienceId}/dashboard?tab=propositions`,

@@ -14,20 +14,6 @@ interface IHubspotProperty {
   value: any
 }
 
-async function addAllUsersToHubspot() {
-  // Find all users that are not admin
-  const allUsers = await UserModel.find({ plan: { $ne: 'admin' } })
-  // Add all to hubspot in parallel
-  const addToHubspotPromises = allUsers.map(async user => {
-    try {
-      await createHubspotContact(user)
-    } catch (error) {
-      console.log('Could not create or update contact', error)
-    }
-  })
-  await Promise.all(addToHubspotPromises)
-}
-
 function getUserHubspotProperties(user: User): IHubspotProperty[] {
   return [
     {
@@ -77,4 +63,4 @@ async function updateHubspotContact(user: User): Promise<void> {
   })
 }
 
-export { createHubspotContact, addAllUsersToHubspot, updateHubspotContact }
+export { createHubspotContact, updateHubspotContact }

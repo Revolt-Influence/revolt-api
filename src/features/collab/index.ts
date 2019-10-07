@@ -31,7 +31,6 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
     locals: {
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
-      campaignName: campaign.name,
       productName: campaign.product.name,
       collabLink: `${process.env.APP_URL}/creator/experiences/${collab._id}`,
     },
@@ -49,7 +48,7 @@ async function notifyCollabDenied(collab: DocumentType<Collab>): Promise<void> {
     locals: {
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
-      campaignName: campaign.name,
+      productName: campaign.product,
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -87,7 +86,7 @@ async function reviewCollab(
         ...messageOptions,
         text: `✅ ${
           (relatedCampaign.brand as Brand).name
-        } has accepted your collab for the campaign "${relatedCampaign.name}"`,
+        } has accepted your collab request for the game "${relatedCampaign.product.name}"`,
       })
       // Mark as accepted
       collab.status = CollabStatus.ACCEPTED
@@ -104,7 +103,7 @@ async function reviewCollab(
         ...messageOptions,
         text: `😞 ${
           (relatedCampaign.brand as Brand).name
-        } has denied your campaign for the collab "${relatedCampaign.name}"`,
+        } has denied your collab request for the game "${relatedCampaign.product.name}"`,
       })
       collab.status = CollabStatus.DENIED
       break
