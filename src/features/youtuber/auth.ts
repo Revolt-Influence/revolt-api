@@ -15,7 +15,11 @@ interface IGoogleData {
 
 const CLIENT_ID = '1084044949036-9vs7ckrse27t3c1kep4k24l8i9rv906k.apps.googleusercontent.com'
 const MINIMUM_YOUTUBE_FOLLOWERS = 2000
-const ADMIN_CHANNEL_IDS = ['UCPtVsdtkwP3YNmObyTy1Lkw', 'UCahnnOrHxWb-DqGg6EgGuxA']
+const ADMIN_CHANNEL_IDS = [
+  'UCPtVsdtkwP3YNmObyTy1Lkw',
+  'UCahnnOrHxWb-DqGg6EgGuxA',
+  'UCoU-ZbKQHGijlWtm0PWiAlQ',
+]
 
 // Initialize Google API clients
 const oauth = new google.auth.OAuth2(

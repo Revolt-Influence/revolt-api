@@ -152,6 +152,8 @@ async function updateCampaignBrief(
   campaign.rules = updatedCampaign.rules
   campaign.estimatedBudget = updatedCampaign.estimatedBudget
   campaign.trackingProvider = updatedCampaign.trackingProvider
+  console.log(updatedCampaign.publishingPlatforms)
+  campaign.publishingPlatforms = updatedCampaign.publishingPlatforms
 
   // Save and return populated campaign
   await campaign.save()
