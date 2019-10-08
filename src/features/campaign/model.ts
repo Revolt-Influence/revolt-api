@@ -31,6 +31,25 @@ registerEnumType(TrackingProvider, {
   description: 'Platforms that provide analytics for game',
 })
 
+export enum PublishingPlatforms {
+  STEAM = 'Steam',
+  ORIGIN = 'Origin',
+  ITCH = 'Itch.io',
+  GAME_JOLT = 'Game Jolt',
+  KARTRIDGE = 'Kartridge',
+  HUMBLE_BUNDLE = 'Humble Bundle',
+  EPIC = 'Epic Games Store',
+  PLAY_STORE = 'Google Play Store',
+  APP_STORE = 'Apple App Store',
+  ESHOP = 'Nintendo eShop',
+  PLAY_STATION_STORE = 'PlayStation Store',
+  MICROSOFT_STORE = 'Microsoft Store',
+}
+registerEnumType(PublishingPlatforms, {
+  name: 'PublishingPlatforms',
+  description: 'All the platforms where a game can be published',
+})
+
 @ObjectType({ description: 'What a creator can receive' })
 @InputType('CampaignProductInput')
 class CampaignProduct {
@@ -133,6 +152,10 @@ class Campaign {
   @Field(() => TrackingProvider, { description: 'Solution used to provide game analytics' })
   @prop({ enum: TrackingProvider, type: String, default: TrackingProvider.NONE })
   trackingProvider: TrackingProvider
+
+  @Field(() => [TrackingProvider], { description: 'Where the game can be downloaded' })
+  @arrayProp({ enum: TrackingProvider, items: String, default: [] })
+  publishingPlatforms: PublishingPlatforms[]
 
   @Field({ description: 'Whether the brand is willing to publish the campaign' })
   @prop({ default: true })

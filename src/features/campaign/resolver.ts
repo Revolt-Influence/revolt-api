@@ -28,7 +28,14 @@ import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { Brand, BrandModel } from '../brand/model'
 import { getCreatorCampaignsPage } from '../creator/campaigns'
 import { MyContext, SessionType } from '../session/model'
-import { Campaign, CampaignModel, CampaignProduct, TargetAudience, TrackingProvider } from './model'
+import {
+  Campaign,
+  CampaignModel,
+  CampaignProduct,
+  TargetAudience,
+  TrackingProvider,
+  PublishingPlatforms,
+} from './model'
 import { User, UserModel } from '../user/model'
 import { CollabModel, Collab } from '../collab/model'
 import { Review, ReviewModel } from '../review/model'
@@ -49,6 +56,9 @@ class CampaignBriefInput implements Partial<Campaign> {
 
   @Field(() => TrackingProvider)
   trackingProvider: TrackingProvider
+
+  @Field(() => [PublishingPlatforms])
+  publishingPlatforms: PublishingPlatforms[]
 }
 
 @Resolver(() => Campaign)
