@@ -31,7 +31,7 @@ registerEnumType(TrackingProvider, {
   description: 'Platforms that provide analytics for game',
 })
 
-export enum PublishingPlatforms {
+export enum PublishingPlatform {
   STEAM = 'Steam',
   ORIGIN = 'Origin',
   ITCH = 'Itch.io',
@@ -45,8 +45,8 @@ export enum PublishingPlatforms {
   PLAY_STATION_STORE = 'PlayStation Store',
   MICROSOFT_STORE = 'Microsoft Store',
 }
-registerEnumType(PublishingPlatforms, {
-  name: 'PublishingPlatforms',
+registerEnumType(PublishingPlatform, {
+  name: 'PublishingPlatform',
   description: 'All the platforms where a game can be published',
 })
 
@@ -153,9 +153,9 @@ class Campaign {
   @prop({ enum: TrackingProvider, type: String, default: TrackingProvider.NONE })
   trackingProvider: TrackingProvider
 
-  @Field(() => [TrackingProvider], { description: 'Where the game can be downloaded' })
-  @arrayProp({ enum: TrackingProvider, items: String, default: [] })
-  publishingPlatforms: PublishingPlatforms[]
+  @Field(() => [PublishingPlatform], { description: 'Where the game can be downloaded' })
+  @arrayProp({ enum: PublishingPlatform, type: String, items: String, default: [] })
+  publishingPlatforms: PublishingPlatform[]
 
   @Field({ description: 'Whether the brand is willing to publish the campaign' })
   @prop({ default: true })

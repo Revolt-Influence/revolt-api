@@ -34,7 +34,7 @@ import {
   CampaignProduct,
   TargetAudience,
   TrackingProvider,
-  PublishingPlatforms,
+  PublishingPlatform,
 } from './model'
 import { User, UserModel } from '../user/model'
 import { CollabModel, Collab } from '../collab/model'
@@ -57,8 +57,8 @@ class CampaignBriefInput implements Partial<Campaign> {
   @Field(() => TrackingProvider)
   trackingProvider: TrackingProvider
 
-  @Field(() => [PublishingPlatforms])
-  publishingPlatforms: PublishingPlatforms[]
+  @Field(() => [PublishingPlatform])
+  publishingPlatforms: PublishingPlatform[]
 }
 
 @Resolver(() => Campaign)
