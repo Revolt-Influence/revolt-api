@@ -45,8 +45,8 @@ type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
 
 @InputType()
 class CampaignBriefInput implements Partial<Campaign> {
-  @Field()
-  goal: string
+  @Field({ deprecationReason: 'Too annoying to write for brands', nullable: true })
+  goal?: string
 
   @Field(() => [String])
   rules: string[]
