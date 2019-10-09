@@ -121,9 +121,13 @@ class Campaign {
   @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
-  @Field({ description: 'More info about the campaign and its goals' })
-  @prop({ default: '' })
-  goal: string
+  @Field({
+    description: 'More info about the campaign and its goals',
+    deprecationReason: 'Too annoying to write for brands',
+    nullable: true,
+  })
+  @prop()
+  goal?: string
 
   @Field(() => User, { description: 'The user who created the campaign' })
   @prop({ ref: 'User' })
