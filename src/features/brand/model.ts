@@ -17,9 +17,13 @@ class Brand {
   @prop()
   logo: string
 
-  @Field({ description: "URL of the brand's website" })
+  @Field({
+    description: "URL of the brand's website",
+    deprecationReason: 'It was useless',
+    nullable: true,
+  })
   @prop()
-  website: string
+  website?: string
 
   @Field(() => [User], { description: 'All the users that work for the brand' })
   @arrayProp({ itemsRef: 'User' })

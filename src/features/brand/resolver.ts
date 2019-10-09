@@ -23,8 +23,8 @@ class UpdateBrandInput implements Partial<Brand> {
   @Field()
   name: string
 
-  @Field()
-  website: string
+  @Field({ deprecationReason: 'Was useless', nullable: true })
+  website?: string
 }
 
 @Resolver(() => Brand)
