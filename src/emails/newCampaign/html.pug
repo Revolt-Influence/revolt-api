@@ -1,19 +1,10 @@
 extends ../layout.pug
 
 block content
-  p What's up Revolt ?
-  p Une nouvelle campagne nommée #{campaignName} a été créée par #{brandName}, ils attendent la modération.
-  p Vous pouvez trouver la campagne avec votre compte admin:
+  p What's up Revolt Gaming ?
+  p #{brandName} want to create a campaign for their game #{campaignName}.
+  p You need to fill the brief for them:
   a(href=dashboardLink) #{dashboardLink}
-  p Vous pouvez accepter la marque dans l'onglet Réglages de la campagne
-  p Et vous pouvez joindre la marque à l'adresse #{brandEmail}
-  if isPremium
-    p L'utilisateur a un compte Premium
-  else
-    p L'utilisateur n'a pas de compte Premium
-  if ambassador
-    p L'ambassadeur de la marque est #{ambassador}
-  else
-   p La marque n'a pas d'ambassadeur.
-  br
-  p À bientôt !
+  p Once it's done, you can notify them using this email:
+  p #{brandEmail}
+  p Bye

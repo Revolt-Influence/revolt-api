@@ -5,15 +5,24 @@ import { Brand, BrandModel } from '../brand/model'
 import { CollabModel } from '../collab/model'
 import { Creator } from '../creator/model'
 import { UserModel } from '../user/model'
-import { Campaign, CampaignModel, CampaignProduct, TargetAudience } from './model'
-import { CampaignBriefInput, PaginatedCampaignResponse } from './resolver'
+import {
+  Campaign,
+  CampaignModel,
+  CampaignProduct,
+  TargetAudience,
+  defaultCampaignProduct,
+} from './model'
+import { CampaignBriefInput, PaginatedCampaignResponse, CreateCampaignInput } from './resolver'
 
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
 
-async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentType<Campaign>> {
+async function createCampaign(
+  owner: mongoose.Types.ObjectId,
+  campaignData: CreateCampaignInput
+): Promise<DocumentType<Campaign>> {
   // Prepare brand to associate with campaign
   const brandDraft: Partial<Brand> = {
-    name: '',
+    name: campaignData.brandName,
     logo: '',
     website: '',
     users: [owner],
@@ -23,11 +32,17 @@ async function createCampaign(owner: mongoose.Types.ObjectId): Promise<DocumentT
   // Prepare campaign
   const campaign = new CampaignModel({
     owner,
-    name: 'My new campaign',
+    product: {
+      ...defaultCampaignProduct,
+      name: campaignData.productName,
+      website: campaignData.website,
+    },
     brand: brand._id,
   } as Partial<Campaign>)
   // Save campaign to database
   await campaign.save()
+  // Notify an admin that a campaign was created
+  sendNewCampaignEmail(campaign)
   // Return campaign from find so we get the object with the Mongoose defaults
   const fullCampaign = await CampaignModel.findById(campaign._id)
   return fullCampaign
@@ -73,17 +88,17 @@ async function getAdminCampaigns(userId: mongoose.Types.ObjectId, page: number =
 }
 
 async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<void> {
-  const brandUser = await UserModel.findById(campaign.owner).populate('ambassador')
-  const ambassador = brandUser && (brandUser.ambassador as Creator)
+  const owner = await UserModel.findById(campaign.owner).populate('ambassador')
+  const brand = await BrandModel.findById(campaign.brand)
+  const ambassador = owner && (owner.ambassador as Creator)
   await emailService.send({
     template: 'newCampaign',
     locals: {
       campaignName: campaign.product.name,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=brief`,
-      brandName: (campaign.brand as DocumentType<Brand>).name,
-      brandEmail: campaign.owner,
+      brandName: brand.name,
+      brandEmail: owner.email,
       ambassador: ambassador && ambassador.email,
-      isPremium: brandUser && brandUser.plan !== 'free',
     },
     message: {
       from: 'Revolt <campaigns@revolt.club>',
@@ -196,7 +211,6 @@ export {
   getCampaignById,
   getUserCampaigns,
   toggleArchiveCampaign,
-  sendNewCampaignEmail,
   deleteCampaign,
   getAdminCampaigns,
   reviewCampaign,

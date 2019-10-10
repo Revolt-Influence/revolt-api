@@ -41,10 +41,22 @@ import { CollabModel, Collab } from '../collab/model'
 import { Review, ReviewModel } from '../review/model'
 
 const PaginatedCampaignResponse = PaginatedResponse(Campaign)
-type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
+export type PaginatedCampaignResponse = InstanceType<typeof PaginatedCampaignResponse>
 
 @InputType()
-class CampaignBriefInput implements Partial<Campaign> {
+export class CreateCampaignInput {
+  @Field({ description: 'Product name' })
+  productName: string
+
+  @Field({ description: 'Product landing page' })
+  website: string
+
+  @Field({ description: 'Name of the brand to create' })
+  brandName: string
+}
+
+@InputType()
+export class CampaignBriefInput implements Partial<Campaign> {
   @Field({ deprecationReason: 'Too annoying to write for brands', nullable: true })
   goal?: string
 
@@ -62,7 +74,7 @@ class CampaignBriefInput implements Partial<Campaign> {
 }
 
 @Resolver(() => Campaign)
-class CampaignResolver {
+export class CampaignResolver {
   @Authorized()
   @Query(() => PaginatedCampaignResponse, {
     description: 'Get page of campaigns, different if brand or a user',
@@ -94,8 +106,11 @@ class CampaignResolver {
 
   @Authorized(AuthRole.USER)
   @Mutation(() => Campaign, { description: 'Create blank campaign' })
-  async createCampaign(@Ctx() ctx: MyContext): Promise<Campaign> {
-    const createdCampaign = await createCampaign(ctx.state.user.user._id)
+  async createCampaign(
+    @Ctx() ctx: MyContext,
+    @Arg('campaignData') campaignData: CreateCampaignInput
+  ): Promise<Campaign> {
+    const createdCampaign = await createCampaign(ctx.state.user.user._id, campaignData)
     return createdCampaign
   }
 
@@ -192,5 +207,3 @@ class CampaignResolver {
     return reviews
   }
 }
-
-export { CampaignResolver, PaginatedCampaignResponse, CampaignBriefInput }
