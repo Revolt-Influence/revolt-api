@@ -68,9 +68,7 @@ async function getUserCampaigns(
 }
 
 async function getAdminCampaigns(userId: mongoose.Types.ObjectId, page: number = 1) {
-  const query = {
-    $or: [{ owner: userId }, { isArchived: false }, { isReviewed: true }] as Partial<Campaign>[],
-  }
+  const query = {}
   return getCampaignsFromQuery(query, page)
 }
 
