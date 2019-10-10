@@ -69,9 +69,9 @@ class CampaignProduct {
   @arrayProp({ items: String, type: String })
   pictures: string[]
 
-  @Field(() => Date, { description: 'Game lauch date, can be past or future' })
+  @Field(() => Date, { description: 'Game lauch date, defined only if future', nullable: true })
   @prop({ type: Date })
-  launchedAt: Date
+  launchedAt?: Date
 
   @Field(() => [GameCategory], { description: 'Game categories that best describe the game' })
   @arrayProp({ enum: GameCategory, type: String, items: String })
@@ -87,7 +87,6 @@ export const defaultCampaignProduct: CampaignProduct = {
   pitch: '',
   website: '',
   pictures: [],
-  launchedAt: new Date(),
   categories: [],
 }
 
