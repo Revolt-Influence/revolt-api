@@ -35,7 +35,7 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       collabLink: `${process.env.APP_URL}/creator/games/${collab._id}`,
     },
     message: {
-      from: 'Revolt <campaigns@revolt.club>',
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
       to: (collab.creator as Creator).email,
     },
   })
@@ -51,7 +51,7 @@ async function notifyCollabDenied(collab: DocumentType<Collab>): Promise<void> {
       productName: campaign.product.name,
     },
     message: {
-      from: 'Revolt <campaigns@revolt.club>',
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
       to: (collab.creator as Creator).email,
     },
   })

@@ -66,7 +66,7 @@ async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<voi
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaign._id}/dashboard?tab=reviews`,
     },
     message: {
-      from: 'Revolt <campaigns@revolt.club>',
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
       to: campaign.owner,
       replyTo: process.env.CAMPAIGN_MANAGER_EMAIL,
     },

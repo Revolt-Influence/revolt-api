@@ -60,7 +60,7 @@ async function notifyNewCampaignProposition(
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaignId}/dashboard?tab=propositions`,
     },
     message: {
-      from: 'Revolt <campaigns@revolt.club>',
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
       to: campaign.owner,
     },
   })

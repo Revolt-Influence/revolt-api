@@ -157,7 +157,7 @@ async function sendMessageEmailNotification({
         message: text,
       },
       message: {
-        from: 'Revolt <campaigns@revolt.club>',
+        from: 'Revolt Gaming <campaigns@revoltgaming.co>',
         to: _recipient.email,
       },
     })

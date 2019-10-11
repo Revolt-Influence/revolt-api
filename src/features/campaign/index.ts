@@ -101,7 +101,7 @@ async function sendNewCampaignEmail(campaign: DocumentType<Campaign>): Promise<v
       ambassador: ambassador && ambassador.email,
     },
     message: {
-      from: 'Revolt <campaigns@revolt.club>',
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
       to: process.env.CAMPAIGN_MANAGER_EMAIL,
     },
   })

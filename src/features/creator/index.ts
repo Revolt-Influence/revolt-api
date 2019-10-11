@@ -131,7 +131,7 @@ async function setCreatorStatus(
       homepageLink: process.env.APP_URL,
     },
     message: {
-      from: 'Revolt <campaigns@revolt.club>',
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
       to: creator.email,
     },
   })
