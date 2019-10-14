@@ -3,7 +3,7 @@ import { emailService } from '../../utils/emails'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Brand, BrandModel } from '../brand/model'
 import { CollabModel } from '../collab/model'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel } from '../creator/model'
 import { UserModel } from '../user/model'
 import {
   Campaign,
@@ -15,6 +15,7 @@ import {
 import { CampaignBriefInput, PaginatedCampaignResponse, CreateCampaignInput } from './resolver'
 
 const CAMPAIGNS_PER_PAGE = 1000 // TODO: real pagination for campaigns
+const CREATORS_CAMPAIGNS_PER_PAGE = 11 // leave 1 card for ambassador program
 
 async function createCampaign(
   owner: mongoose.Types.ObjectId,
@@ -204,6 +205,60 @@ async function updateCampaignTargetAudience(
   // Save and return campaign
   await campaign.save()
   return campaign
+}
+
+export async function notifyNewCampaignProposition(
+  campaignId: mongoose.Types.ObjectId,
+  creatorId: mongoose.Types.ObjectId,
+  message: string
+): Promise<void> {
+  // Fetch data that's needed in the email
+  const campaign = await getCampaignById(campaignId)
+  const creator = await CreatorModel.findById(creatorId)
+  // Send the email
+  await emailService.send({
+    template: 'newCollabProposition',
+    locals: {
+      brandName: (campaign.brand as Brand).name,
+      productName: campaign.product.name,
+      username: creator.name,
+      message,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaignId}/dashboard?tab=propositions`,
+    },
+    message: {
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
+      to: campaign.owner,
+    },
+  })
+}
+
+// Fetch all campaigns (campaigns) with pagination
+export async function getCreatorCampaignsPage(
+  creatorId: mongoose.Types.ObjectId,
+  page: number = 1
+): Promise<PaginatedCampaignResponse> {
+  const safePage = page < 1 ? 1 : page // Prevent page 0, starts at 1
+
+  // Only active campaigns where the creator isn't in a collab
+  const allCreatorCollabs = await CollabModel.find({ creator: creatorId })
+  const allCollabsCampaignsIds = allCreatorCollabs.map(_collab => _collab.campaign)
+  const query = { isReviewed: true, isArchived: false, _id: { $nin: allCollabsCampaignsIds } }
+
+  // Promise to get paginated results
+  const campaignsPromise = CampaignModel.find(query)
+    .sort({ creationDate: 'descending' })
+    .skip((safePage - 1) * CREATORS_CAMPAIGNS_PER_PAGE)
+    .limit(CREATORS_CAMPAIGNS_PER_PAGE)
+    .exec()
+  // Promise to count all unpaginated results
+  const totalResultsPromise = CampaignModel.find(query)
+    .countDocuments()
+    .exec()
+  // Run results and results count in parallel
+  const [campaigns, totalResults] = await Promise.all([campaignsPromise, totalResultsPromise])
+  const totalPages = Math.ceil(totalResults / CREATORS_CAMPAIGNS_PER_PAGE)
+
+  return { items: campaigns, totalPages, currentPage: page }
 }
 
 export {

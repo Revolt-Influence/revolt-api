@@ -22,11 +22,11 @@ import {
   updateCampaignProduct,
   updateCampaignTargetAudience,
   getAdminCampaigns,
+  getCreatorCampaignsPage,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { Brand, BrandModel } from '../brand/model'
-import { getCreatorCampaignsPage } from '../creator/campaigns'
 import { MyContext, SessionType } from '../session/model'
 import {
   Campaign,

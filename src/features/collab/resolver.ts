@@ -14,12 +14,11 @@ import {
 } from 'type-graphql'
 import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import { errorNames } from '../../utils/errors'
-import { getCollabById, reviewCollab, getCreatorCollabs } from '.'
+import { getCollabById, reviewCollab, getCreatorCollabs, applyToCampaign } from '.'
 import { submitCreatorReview, BaseReview, enrichReview } from '../review'
 import { Collab, ReviewCollabDecision, CollabModel } from './model'
 import { AuthRole } from '../../middleware/auth'
 import { MyContext } from '../session/model'
-import { applyToCampaign } from '../creator/campaigns'
 import { Review, ReviewFormat, ReviewModel } from '../review/model'
 import { Creator, CreatorModel } from '../creator/model'
 import { Campaign, CampaignModel } from '../campaign/model'
@@ -55,12 +54,14 @@ class CollabResolver {
   async applyToCampaign(
     @Arg('campaignId') campaignId: string,
     @Arg('message', { description: 'Motivation message' }) message: string,
+    @Arg('quote') quote: number,
     @Ctx() ctx: MyContext
   ): Promise<Collab> {
     const createdCollab = await applyToCampaign(
       mongoose.Types.ObjectId(campaignId),
       ctx.state.user.creator._id,
-      message
+      message,
+      quote
     )
     return createdCollab
   }

@@ -1,12 +1,13 @@
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel, CreatorStatus } from '../creator/model'
 import { emailService } from '../../utils/emails'
-import { getCampaignById } from '../campaign'
+import { getCampaignById, notifyNewCampaignProposition } from '../campaign'
 import { Brand } from '../brand/model'
-import { sendMessage, MessageOptions } from '../conversation'
+import { sendMessage, MessageOptions, getOrCreateConversationByParticipants } from '../conversation'
 import { ConversationModel } from '../conversation/model'
+import { CampaignModel } from '../campaign/model'
 
 async function getCollabById(
   collabId: string,
@@ -21,6 +22,60 @@ async function getCollabById(
   if (collab == null) {
     throw new CustomError(404, errorNames.collabNotFound)
   }
+  return collab
+}
+
+export async function applyToCampaign(
+  campaignId: mongoose.Types.ObjectId,
+  creatorId: mongoose.Types.ObjectId,
+  message: string,
+  quote: number
+): Promise<DocumentType<Collab>> {
+  // Check if creator hasn't already applied
+  const maybeExistingCollab = await CollabModel.findOne({
+    campaign: campaignId,
+    creator: creatorId,
+  })
+  if (maybeExistingCollab != null) {
+    throw new CustomError(400, errorNames.alreadyApplied)
+  }
+
+  // Verify the creator is verified by an admin
+  const creator = await CreatorModel.findById(creatorId)
+  if (creator.status !== CreatorStatus.VERIFIED) {
+    throw new Error(errorNames.unauthorized)
+  }
+
+  // Find the collab brand
+  const campaign = await CampaignModel.findById(campaignId)
+  // Find or creator matching conversation
+  const conversation = await getOrCreateConversationByParticipants(
+    creatorId,
+    campaign.brand as mongoose.Types.ObjectId
+  )
+  // Send motivation message
+  await sendMessage({
+    conversationId: conversation._id,
+    text: message,
+    creatorAuthorId: creatorId,
+    isAdminAuthor: false,
+    isNotification: true,
+  })
+  // Actually create the collab
+  const collab = new CollabModel({
+    campaign: campaignId,
+    creator: creatorId,
+    status: CollabStatus.REQUEST,
+    deadline: null,
+    message,
+    quote,
+    conversation: conversation._id,
+  } as Partial<Collab>)
+  await collab.save()
+
+  // Notify the brand via email in the background (no async needed)
+  notifyNewCampaignProposition(campaignId, creatorId, message)
+
   return collab
 }
 

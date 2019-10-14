@@ -6,6 +6,8 @@ import { uploadToCloudinary } from '../../utils/pictures'
 import { IChannelReport, RawYoutubeMetric, Youtuber, YoutuberModel, YoutubeVideo } from './model'
 import { getAudienceFromReport } from './audience'
 
+import moment = require('moment')
+
 interface IGoogleData {
   googleAccessToken: string
   googleRefreshToken: string
@@ -84,12 +86,15 @@ async function checkGoogleToken(code: string): Promise<IGoogleData> {
 }
 
 async function getChannelReport(accessToken: string): Promise<IChannelReport> {
-  const date = new Date()
+  const twoYearsAgo = moment()
+    .subtract(2, 'years')
+    .format('YYYY-MM-DD')
+  const now = moment().format('YYYY-MM-DD')
   const baseReportQuery = {
     access_token: accessToken,
     metrics: 'viewerPercentage',
-    startDate: '2013-01-01', // Completely arbitrary
-    endDate: date.toISOString().split('T')[0],
+    startDate: twoYearsAgo, // Completely arbitrary
+    endDate: now,
     ids: 'channel==MINE',
   }
 
@@ -107,6 +112,13 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     dimensions: 'country',
     metrics: 'views',
   })
+
+  // const cpm = await analytics.reports.query({
+  //   ...baseReportQuery,
+  //   metrics: 'playbackBasedCpm',
+  // })
+  // console.log(cpm.data.rows)
+  // throw new Error('hehhe')
 
   // Execute the API calls in parallel
   const channelsList = await youtube.channels.list({
