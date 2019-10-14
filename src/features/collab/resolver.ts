@@ -14,7 +14,13 @@ import {
 } from 'type-graphql'
 import { mongoose, DocumentType } from '@hasezoey/typegoose'
 import { errorNames } from '../../utils/errors'
-import { getCollabById, reviewCollab, getCreatorCollabs, applyToCampaign } from '.'
+import {
+  getCollabById,
+  reviewCollab,
+  getCreatorCollabs,
+  applyToCampaign,
+  updateCollabQuote,
+} from '.'
 import { submitCreatorReview, BaseReview, enrichReview } from '../review'
 import { Collab, ReviewCollabDecision, CollabModel } from './model'
 import { AuthRole } from '../../middleware/auth'
@@ -93,6 +99,16 @@ class CollabResolver {
     })
     // Save reviews in collab
     const updatedCollab = await submitCreatorReview(collabId, savedReview)
+    return updatedCollab
+  }
+
+  @Authorized(AuthRole.CREATOR)
+  @Mutation(() => Collab, { description: 'Update collab quote after negotiation' })
+  async updateCollabQuote(
+    @Arg('collabId') collabId: string,
+    @Arg('newQuote') newQuote: number
+  ): Promise<Collab> {
+    const updatedCollab = await updateCollabQuote(collabId, newQuote)
     return updatedCollab
   }
 
