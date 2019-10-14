@@ -74,7 +74,7 @@ export async function applyToCampaign(
   await collab.save()
 
   // Notify the brand via email in the background (no async needed)
-  notifyNewCampaignProposition(campaignId, creatorId, message)
+  notifyNewCampaignProposition(campaignId, creatorId, message, quote)
 
   return collab
 }

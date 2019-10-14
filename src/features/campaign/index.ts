@@ -210,7 +210,8 @@ async function updateCampaignTargetAudience(
 export async function notifyNewCampaignProposition(
   campaignId: mongoose.Types.ObjectId,
   creatorId: mongoose.Types.ObjectId,
-  message: string
+  message: string,
+  quote: number
 ): Promise<void> {
   // Fetch data that's needed in the email
   const campaign = await getCampaignById(campaignId)
@@ -223,6 +224,7 @@ export async function notifyNewCampaignProposition(
       productName: campaign.product.name,
       username: creator.name,
       message,
+      quote,
       dashboardLink: `${process.env.APP_URL}/brand/campaigns/${campaignId}/dashboard?tab=propositions`,
     },
     message: {
