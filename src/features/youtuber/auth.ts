@@ -113,12 +113,10 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     metrics: 'views',
   })
 
-  // const cpm = await analytics.reports.query({
-  //   ...baseReportQuery,
-  //   metrics: 'playbackBasedCpm',
-  // })
-  // console.log(cpm.data.rows)
-  // throw new Error('hehhe')
+  const cpm = await analytics.reports.query({
+    ...baseReportQuery,
+    metrics: 'playbackBasedCpm',
+  })
 
   // Execute the API calls in parallel
   const channelsList = await youtube.channels.list({
@@ -155,6 +153,7 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     country: channel.snippet.country,
     language: channel.snippet.defaultLanguage,
     uploadsPlaylistId: channel.contentDetails.relatedPlaylists.uploads,
+    estimatedCpm: cpm.data.rows[0][0],
     url:
       channel.snippet.customUrl == null
         ? `https://www.youtube.com/channel/${channel.id}`
@@ -164,25 +163,31 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
 }
 
 async function getChannelVideos(uploadsPlaylistId: string): Promise<YoutubeVideo[]> {
-  const response = await youtube.playlistItems.list({
+  console.log('before paylist')
+  const playlistResponse = await youtube.playlistItems.list({
     playlistId: uploadsPlaylistId,
-    part: 'snippet',
+    maxResults: 40, // Max is 50, default 5
+    part: 'contentDetails',
   })
-  const rawVideos =
-    response.data &&
-    response.data.items &&
-    response.data.items
-      .filter(_video => !!_video && !!_video.snippet && !!_video.snippet.resourceId)
-      .map(_video => ({
+  const videoIds = playlistResponse.data.items.map(_video => _video.contentDetails.videoId)
+  const videosResponse = await youtube.videos.list({
+    id: videoIds.join(','),
+    part: 'snippet,statistics,id',
+  })
+  console.log(videosResponse.data.items)
+  const rawVideos = videosResponse.data.items.map(
+    _video =>
+      ({
+        videoId: _video.id,
         title: _video.snippet.title,
+        viewCount: parseInt(_video.statistics.viewCount),
+        likeCount: parseInt(_video.statistics.likeCount),
+        commentCount: parseInt(_video.statistics.commentCount),
+        publishedAt: new Date(_video.snippet.publishedAt),
         thumbnail: _video.snippet.thumbnails.high.url,
-        videoId: _video.snippet.resourceId.videoId,
-        url: `https://www.youtube.com/watch?v=${_video.snippet.resourceId.videoId}`,
-        viewCount: null,
-        commentCount: null,
-        likeCount: null,
-        publishedAt: null,
-      }))
+        url: `https://www.youtube.com/watch?v=${_video.id}`,
+      } as YoutubeVideo)
+  )
   return rawVideos
 }
 
@@ -200,6 +205,7 @@ async function createYoutuberFromReport(
     language,
     url,
     uploadsPlaylistId,
+    estimatedCpm,
   } = report
   const youtuberDraft: Partial<Youtuber> = {
     name,
@@ -207,6 +213,7 @@ async function createYoutuberFromReport(
     viewCount,
     videoCount,
     subscriberCount,
+    estimatedCpm,
     picture: report.thumbnail,
     url,
     videos,
