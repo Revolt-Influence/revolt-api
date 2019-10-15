@@ -106,9 +106,10 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'Update collab quote after negotiation' })
   async updateCollabQuote(
     @Arg('collabId') collabId: string,
-    @Arg('newQuote') newQuote: number
+    @Arg('newQuote') newQuote: number,
+    @Ctx() ctx: MyContext
   ): Promise<Collab> {
-    const updatedCollab = await updateCollabQuote(collabId, newQuote)
+    const updatedCollab = await updateCollabQuote(collabId, newQuote, ctx.io)
     return updatedCollab
   }
 

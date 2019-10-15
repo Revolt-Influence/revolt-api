@@ -5,7 +5,12 @@ import { Creator, CreatorModel, CreatorStatus } from '../creator/model'
 import { emailService } from '../../utils/emails'
 import { getCampaignById, notifyNewCampaignProposition } from '../campaign'
 import { Brand } from '../brand/model'
-import { sendMessage, MessageOptions, getOrCreateConversationByParticipants } from '../conversation'
+import {
+  sendMessage,
+  MessageOptions,
+  getOrCreateConversationByParticipants,
+  emitMessageToSockets,
+} from '../conversation'
 import { ConversationModel } from '../conversation/model'
 import { CampaignModel, Campaign } from '../campaign/model'
 import { UserModel } from '../user/model'
@@ -198,7 +203,11 @@ async function getCreatorCollabs(
   return collabs
 }
 
-export async function updateCollabQuote(collabId: string, newQuote: number): Promise<Collab> {
+export async function updateCollabQuote(
+  collabId: string,
+  newQuote: number,
+  io: SocketIO.Server
+): Promise<Collab> {
   // Find the collab
   const collab = await CollabModel.findById(collabId).populate('creator campaign')
   // Make sure it wasn't accepted already
@@ -228,13 +237,18 @@ export async function updateCollabQuote(collabId: string, newQuote: number): Pro
       to: owner.email,
     },
   })
-  // Send notification message in the background
-  sendMessage({
+  // Send notification message
+  const sentMessage = await sendMessage({
     conversationId: collab.conversation as mongoose.Types.ObjectId,
     isAdminAuthor: true,
     isNotification: true, // Don't send double email
     text: `${(collab.creator as Creator).name} has updated his quote. It is now $${newQuote}`,
   })
+  // Send message to sockets
+  const conversation = await ConversationModel.findById(
+    collab.conversation as mongoose.Types.ObjectId
+  )
+  emitMessageToSockets(io, conversation, sentMessage)
   // Return updated collab
   return collab
 }

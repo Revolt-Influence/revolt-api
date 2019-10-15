@@ -104,12 +104,12 @@ async function submitCreatorReview(
   notifyReviewsSubmitted(collab)
 
   // Send message in the background
-  sendMessage({
+  const sentMessage = await sendMessage({
     conversationId: collab.conversation as mongoose.Types.ObjectId,
     brandAuthorId: null,
     creatorAuthorId: null,
     isAdminAuthor: true,
-    text: `🔥 ${(collab.creator as Creator).name} a posté ses revues pour la campagne ${
+    text: `🔥 ${(collab.creator as Creator).name} has posted his review of ${
       campaign.product.name
     }`,
     isNotification: true,
