@@ -18,6 +18,7 @@ import {
   saveCreatorProfile,
   setCreatorStatus,
   updateCreatorEmail,
+  createStripeConnectedAccount,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
@@ -146,7 +147,7 @@ class CreatorResolver {
   }
 
   @Authorized(AuthRole.CREATOR)
-  @Mutation(() => User, { description: 'Change creator password' })
+  @Mutation(() => Creator, { description: 'Change creator password' })
   async changeCreatorPassword(
     @Arg('currentPassword') currentPassword: string,
     @Arg('newPassword') newPassword: string,
@@ -160,6 +161,16 @@ class CreatorResolver {
     return updatedUser
   }
 
+  @Authorized(AuthRole.CREATOR)
+  @Mutation(() => Creator, { description: 'Create Stripe connected account from code' })
+  async createStripeConnectedAccount(
+    @Arg('code') code: string,
+    @Ctx() ctx: MyContext
+  ): Promise<Creator> {
+    const updatedCreator = await createStripeConnectedAccount(code, ctx.state.user.creator._id)
+    return updatedCreator
+  }
+
   @FieldResolver()
   async youtube(@Root() creator: DocumentType<Creator>): Promise<Youtuber> {
     const youtube = await YoutuberModel.findById(creator.youtube)
@@ -170,6 +181,11 @@ class CreatorResolver {
   async ambassador(@Root() creator: DocumentType<Creator>): Promise<Creator> {
     const ambassador = await CreatorModel.findById(creator.ambassador)
     return ambassador
+  }
+
+  @FieldResolver()
+  hasConnectedStripe(@Root() creator: DocumentType<Creator>): boolean {
+    return !!creator.stripeConnectedAccountId
   }
 }
 

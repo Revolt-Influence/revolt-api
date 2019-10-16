@@ -144,6 +144,12 @@ class Creator {
   @prop()
   resetPasswordExpiresAt?: Date
 
+  @prop()
+  stripeConnectedAccountId?: string
+
+  @Field({ description: 'Whether the creator has a Stripe connect account' })
+  hasConnectedStripe: boolean
+
   @Field(() => CreatorStatus, { description: 'Whether the influencer was validated by an admin' })
   @prop({ enum: CreatorStatus, type: String, default: CreatorStatus.UNVERIFIED })
   status: CreatorStatus
