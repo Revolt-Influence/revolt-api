@@ -163,7 +163,6 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
 }
 
 async function getChannelVideos(uploadsPlaylistId: string): Promise<YoutubeVideo[]> {
-  console.log('before paylist')
   const playlistResponse = await youtube.playlistItems.list({
     playlistId: uploadsPlaylistId,
     maxResults: 40, // Max is 50, default 5
@@ -174,7 +173,6 @@ async function getChannelVideos(uploadsPlaylistId: string): Promise<YoutubeVideo
     id: videoIds.join(','),
     part: 'snippet,statistics,id',
   })
-  console.log(videosResponse.data.items)
   const rawVideos = videosResponse.data.items.map(
     _video =>
       ({

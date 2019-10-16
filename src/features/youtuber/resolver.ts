@@ -30,9 +30,7 @@ class YoutuberResolver {
   @FieldResolver(() => Number)
   medianViews(@Root() youtuber: DocumentType<Youtuber>): number {
     const views = youtuber.videos.map(_video => _video.viewCount)
-    console.log(views)
     const medianViewCount = getMedian(views)
-    console.log(medianViewCount)
     return medianViewCount
   }
 }
