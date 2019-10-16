@@ -68,6 +68,7 @@ interface IChannelReport {
   language: string
   url: string
   uploadsPlaylistId: string
+  estimatedCpm: number
   // Audience metrics
   audienceAge: RawYoutubeMetric
   audienceGender: RawYoutubeMetric
@@ -140,6 +141,13 @@ class Youtuber {
   @Field()
   @prop()
   uploadsPlaylistId: string
+
+  @Field()
+  @prop({ type: Float })
+  estimatedCpm: number
+
+  // @Field()
+  // medianViews: number
 
   @Field(() => Date)
   createdAt: Readonly<Date>
