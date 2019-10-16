@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import superagent from 'superagent'
+import Stripe from 'stripe'
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
@@ -14,6 +15,8 @@ const SALT_ROUNDS = 10
 const MINIMUM_INSTAGRAM_LIKES = 250
 const ADMIN_USERNAMES = ['remiv2', 'remi.rvlt']
 const CREATORS_PER_PAGE = 25
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 async function getCreatorsPage(
   page: number,
@@ -193,6 +196,22 @@ async function changeCreatorPassword({
   // Actually change password
   const newPasswordHashed = await bcrypt.hash(newPassword, SALT_ROUNDS)
   creator.password = newPasswordHashed
+  await creator.save()
+  return creator
+}
+
+export async function createStripeConnectedAccount(
+  code: string,
+  creatorId: mongoose.Types.ObjectId
+): Promise<Creator> {
+  // Validate the Stripe code
+  const stripeResponse = await (stripe as any).oauth.token({
+    grant_type: 'authorization_code',
+    code,
+  })
+  // Find and update creator
+  const creator = await CreatorModel.findById(creatorId)
+  creator.stripeConnectedAccountId = stripeResponse.stripe_user_id
   await creator.save()
   return creator
 }

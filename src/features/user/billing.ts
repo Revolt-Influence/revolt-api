@@ -9,8 +9,7 @@ dotenv.config()
 
 // Setup Stripe stuff
 const upperCaseEnv = process.env.NODE_ENV && process.env.NODE_ENV.toUpperCase()
-const secretKey = process.env.STRIPE_SECRET_KEY
-const stripe = new Stripe(secretKey as string)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const premiumPlanId = 'plan_FeOlduEF2o9fdt'
 
 async function createCustomer(token: string, email: string, fullName: string): Promise<string> {
