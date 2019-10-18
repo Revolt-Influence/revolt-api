@@ -17,7 +17,12 @@ import { Session, createDefaultSession, SessionType, MyContext } from '../sessio
 import { createUser, updateUserEmail } from '.'
 import { changeUserPassword, sendResetPasswordEmail, resetPasswordViaEmail } from './password'
 import { AuthRole } from '../../middleware/auth'
-import { createStripeSession, saveUserPaymentMethod, checkIfUserHasPaymentMethod } from './billing'
+import {
+  createStripeSession,
+  saveUserPaymentMethod,
+  checkIfUserHasPaymentMethod,
+  getUserCardLast4,
+} from './billing'
 import { createSessionId } from '../session'
 
 @InputType()
@@ -132,7 +137,14 @@ class UserResolver {
 
   @FieldResolver()
   async hasPaymentMethod(@Root() user: DocumentType<User>): Promise<boolean> {
-    return checkIfUserHasPaymentMethod(user._id)
+    return checkIfUserHasPaymentMethod(user)
+  }
+
+  @Authorized(AuthRole.USER)
+  @FieldResolver()
+  async creditCardLast4(@Root() user: DocumentType<User>): Promise<string> {
+    const last4 = await getUserCardLast4(user)
+    return last4
   }
 }
 

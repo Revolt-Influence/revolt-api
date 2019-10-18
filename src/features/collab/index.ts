@@ -93,6 +93,7 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
       productName: campaign.product.name,
+      quote: collab.quote,
       collabLink: `${process.env.APP_URL}/creator/games/${collab._id}`,
     },
     message: {

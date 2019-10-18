@@ -4,8 +4,12 @@ import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'
+import { CollabModel } from '../collab/model'
+import { CampaignModel, Campaign } from '../campaign/model'
+import { Creator } from '../creator/model'
 
 dotenv.config()
+const PLATFORM_COMMISSION_PERCENTAGE = 15
 
 // Setup Stripe stuff
 const upperCaseEnv = process.env.NODE_ENV && process.env.NODE_ENV.toUpperCase()
@@ -92,5 +96,57 @@ export async function checkIfUserHasPaymentMethod(user: User): Promise<boolean> 
     customer: user.stripeCustomerId,
     type: 'card',
   })
-  return userMethods.total_count > 0
+  return userMethods.data.length > 0
+}
+
+export async function getUserCardLast4(user: DocumentType<User>): Promise<string> {
+  if (!user.stripeCustomerId) return null
+  const userMethods = await stripe.paymentMethods.list({
+    customer: user.stripeCustomerId,
+    type: 'card',
+  })
+  if (userMethods.data.length === 0) return null
+  const { last4 } = userMethods.data[0].card
+  return last4
+}
+
+// off_session exists in the docs but was missing from the types
+interface FixedPaymentIntent extends Stripe.paymentIntents.IPaymentIntentCreationOptions {
+  off_session: boolean
+}
+export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Promise<void> {
+  // Get quote amount and stripe users
+  const { quote, campaign, creator } = await CollabModel.findById(collabId).populate(
+    'campaign owner creator'
+  )
+
+  const brandUser = await UserModel.findById((campaign as Campaign).owner)
+  const paymentMethods = await stripe.paymentMethods.list({
+    customer: brandUser.stripeCustomerId,
+    type: 'card',
+  })
+  if (paymentMethods.total_count === 0) {
+    throw new Error(errorNames.noPaymentMethod)
+  }
+
+  // Calculate how much the platform keeps (x100 because s)
+  const platformFee = quote * (100 - PLATFORM_COMMISSION_PERCENTAGE)
+
+  // Actually charge the customer and send money to the creator
+  await stripe.paymentIntents.create({
+    amount: (quote + platformFee) * 100, // x100 because it's in cents
+    currency: 'usd',
+    customer: brandUser.stripeCustomerId,
+    payment_method: paymentMethods.data[0].id,
+    off_session: true,
+    confirm: true,
+    payment_method_types: ['card'],
+    on_behalf_of: (creator as Creator).stripeConnectedAccountId,
+    description: `${(campaign as Campaign).product.name} x ${(creator as Creator).name} collab`,
+    transfer_data: {
+      // Once the card is charged, send all but the platform fee to the creator
+      destination: (creator as Creator).stripeConnectedAccountId,
+      amount: quote * 100, // x100 because it's in cents
+    },
+  } as FixedPaymentIntent)
 }

@@ -1,7 +1,8 @@
 import mongoose from 'mongoose'
 import { prop, Ref, getModelForClass, modelOptions } from '@hasezoey/typegoose'
-import { ObjectType, Field, ID, registerEnumType } from 'type-graphql'
+import { ObjectType, Field, ID, registerEnumType, Authorized } from 'type-graphql'
 import { Creator } from '../creator/model'
+import { AuthRole } from '../../middleware/auth'
 
 enum Plan {
   FREE = 'free',
@@ -34,15 +35,15 @@ class User {
   @prop({ enum: Plan, default: Plan.FREE })
   plan: Plan
 
-  @Field({ description: 'Got from Stripe, used to tell what card the user used', nullable: true })
-  @prop()
-  creditCardLast4?: string
-
   @prop()
   stripeCustomerId?: string
 
   @Field({ description: 'Whether the user has entered a payment method' })
   hasPaymentMethod: boolean
+
+  @Authorized(AuthRole.USER)
+  @Field({ description: 'Last digits of the saved credit card', nullable: true })
+  creditCardLast4?: string
 
   @prop()
   resetPasswordToken?: string
@@ -69,9 +70,6 @@ class User {
   @Field({ description: 'Only created for Premium users', nullable: true })
   @prop()
   lastName?: string
-
-  @prop()
-  stripeCu
 
   @Field(() => Date)
   createdAt: Readonly<Date>
