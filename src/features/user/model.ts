@@ -38,12 +38,11 @@ class User {
   @prop()
   creditCardLast4?: string
 
-  @Field({
-    description: 'Used to retrieve a Stripe customer when he gets back to Premium',
-    nullable: true,
-  })
   @prop()
-  stripeCustomerId: string
+  stripeCustomerId?: string
+
+  @Field({ description: 'Whether the user has entered a payment method' })
+  hasPaymentMethod: boolean
 
   @prop()
   resetPasswordToken?: string
@@ -70,6 +69,9 @@ class User {
   @Field({ description: 'Only created for Premium users', nullable: true })
   @prop()
   lastName?: string
+
+  @prop()
+  stripeCu
 
   @Field(() => Date)
   createdAt: Readonly<Date>

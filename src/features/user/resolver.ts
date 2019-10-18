@@ -17,7 +17,7 @@ import { Session, createDefaultSession, SessionType, MyContext } from '../sessio
 import { createUser, updateUserEmail } from '.'
 import { changeUserPassword, sendResetPasswordEmail, resetPasswordViaEmail } from './password'
 import { AuthRole } from '../../middleware/auth'
-import { switchToPremium, cancelPremium, updateCreditCard } from './billing'
+import { createStripeSession, saveUserPaymentMethod, checkIfUserHasPaymentMethod } from './billing'
 import { createSessionId } from '../session'
 
 @InputType()
@@ -91,40 +91,6 @@ class UserResolver {
     return updatedUser
   }
 
-  @Authorized(AuthRole.USER)
-  @Mutation(() => User, { description: 'Switch user to Premium plan' })
-  async upgradeUser(
-    @Arg('paymentToken') paymentToken: string,
-    @Arg('firstName') firstName: string,
-    @Arg('lastName') lastName: string,
-    @Ctx() ctx: MyContext
-  ): Promise<User> {
-    const updatedUser = await switchToPremium(
-      ctx.state.user.user._id,
-      firstName,
-      lastName,
-      paymentToken
-    )
-    return updatedUser
-  }
-
-  @Authorized(AuthRole.USER)
-  @Mutation(() => User, { description: 'Cancel user Premium plan to go back to free' })
-  async downgradeUser(@Ctx() ctx: MyContext): Promise<User> {
-    const updatedUser = await cancelPremium(ctx.state.user.user._id)
-    return updatedUser
-  }
-
-  @Authorized(AuthRole.USER)
-  @Mutation(() => User, { description: 'Change the card that Stripe charges for Premium' })
-  async updateCreditCard(
-    @Arg('newPaymentToken') newPaymentToken: string,
-    @Ctx() ctx: MyContext
-  ): Promise<User> {
-    const updatedUser = await updateCreditCard(ctx.state.user.user._id, newPaymentToken)
-    return updatedUser
-  }
-
   @Mutation(() => String, {
     description: 'Send reset password link by email if creator or user forgot password',
   })
@@ -142,10 +108,31 @@ class UserResolver {
     return 'Password changed'
   }
 
+  @Authorized(AuthRole.USER)
+  @Mutation(() => String, {
+    description: 'Create session token that will be used by Stripe Checkout',
+  })
+  async createStripeSession(@Ctx() ctx: MyContext): Promise<string> {
+    const sessionId = await createStripeSession(ctx.state.user.user.email)
+    return sessionId
+  }
+
+  @Authorized(AuthRole.USER)
+  @Mutation(() => User, { description: 'Save payment method and link it to a Stripe customer' })
+  async saveUserPaymentMethod(@Arg('token') token: string, @Ctx() ctx: MyContext): Promise<User> {
+    const updatedUser = await saveUserPaymentMethod(token, ctx.state.user.user._id)
+    return updatedUser
+  }
+
   @FieldResolver()
   async ambassador(@Root() user: DocumentType<User>): Promise<Creator> {
     const ambassador = await CreatorModel.findById(user.ambassador)
     return ambassador
+  }
+
+  @FieldResolver()
+  async hasPaymentMethod(@Root() user: DocumentType<User>): Promise<boolean> {
+    return checkIfUserHasPaymentMethod(user._id)
   }
 }
 
