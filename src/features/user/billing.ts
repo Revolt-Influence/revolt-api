@@ -130,7 +130,7 @@ export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Prom
   }
 
   // Calculate how much the platform keeps (x100 because s)
-  const platformFee = quote * (100 - PLATFORM_COMMISSION_PERCENTAGE)
+  const platformFee = quote * (PLATFORM_COMMISSION_PERCENTAGE / 100)
 
   // Actually charge the customer and send money to the creator
   await stripe.paymentIntents.create({
