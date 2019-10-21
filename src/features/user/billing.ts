@@ -143,10 +143,11 @@ export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Prom
     payment_method_types: ['card'],
     on_behalf_of: (creator as Creator).stripeConnectedAccountId,
     description: `${(campaign as Campaign).product.name} x ${(creator as Creator).name} collab`,
+    application_fee_amount: platformFee * 100, // x100 because cents
     transfer_data: {
       // Once the card is charged, send all but the platform fee to the creator
       destination: (creator as Creator).stripeConnectedAccountId,
-      amount: quote * 100, // x100 because it's in cents
+      // amount: quote * 100, // x100 because it's in cents
     },
   } as FixedPaymentIntent)
 }
