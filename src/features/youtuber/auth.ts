@@ -93,7 +93,8 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
   const baseReportQuery = {
     access_token: accessToken,
     metrics: 'viewerPercentage',
-    startDate: twoYearsAgo, // Completely arbitrary
+    startDate: '2013-01-01', // Just to have data to copy
+    // startDate: twoYearsAgo, // Completely arbitrary
     endDate: now,
     ids: 'channel==MINE',
   }
