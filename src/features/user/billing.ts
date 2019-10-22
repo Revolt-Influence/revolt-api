@@ -147,7 +147,6 @@ export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Prom
     transfer_data: {
       // Once the card is charged, send all but the platform fee to the creator
       destination: (creator as Creator).stripeConnectedAccountId,
-      // amount: quote * 100, // x100 because it's in cents
     },
   } as FixedPaymentIntent)
 }

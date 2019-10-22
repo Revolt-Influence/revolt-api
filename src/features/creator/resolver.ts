@@ -19,6 +19,7 @@ import {
   setCreatorStatus,
   updateCreatorEmail,
   createStripeConnectedAccount,
+  getCreatorStripeLoginLink,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
@@ -186,6 +187,12 @@ class CreatorResolver {
   @FieldResolver()
   hasConnectedStripe(@Root() creator: DocumentType<Creator>): boolean {
     return !!creator.stripeConnectedAccountId
+  }
+
+  @FieldResolver()
+  async stripeLoginLink(@Root() creator: DocumentType<Creator>): Promise<string> {
+    const loginLogin = await getCreatorStripeLoginLink(creator._id)
+    return loginLogin
   }
 }
 
