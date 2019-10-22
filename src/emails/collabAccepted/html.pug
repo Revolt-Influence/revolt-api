@@ -12,6 +12,8 @@ block content
   p 1. Copy the link of your post
   p 2. Go to Revolt and enter the link in the Collabs section
   br
-  a(href=collabLink) 👉 See collab details 👈
+  if quote > 0
+    p You will receive the $#{quote} once you have submitted your review on the platform.
+  a.btn.btn-primary(href=collabLink target='_blank') See collab details
   br
   p Thanks.

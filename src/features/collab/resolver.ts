@@ -59,7 +59,7 @@ class CollabResolver {
   @Mutation(() => Collab, { description: 'Creates a collab request' })
   async applyToCampaign(
     @Arg('campaignId') campaignId: string,
-    @Arg('message', { description: 'Motivation message' }) message: string,
+    @Arg('message', { description: 'Motivation message and proposition' }) message: string,
     @Arg('quote') quote: number,
     @Ctx() ctx: MyContext
   ): Promise<Collab> {

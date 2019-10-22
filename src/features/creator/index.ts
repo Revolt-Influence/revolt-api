@@ -216,6 +216,12 @@ export async function createStripeConnectedAccount(
   return creator
 }
 
+export async function getCreatorStripeLoginLink(creatorId: string): Promise<string> {
+  const creator = await CreatorModel.findById(creatorId)
+  const loginData = await stripe.accounts.createLoginLink(creator.stripeConnectedAccountId)
+  return loginData.url
+}
+
 export {
   createCreator,
   saveCreatorProfile,

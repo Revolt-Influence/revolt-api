@@ -48,7 +48,7 @@ export async function applyToCampaign(
 
   // Verify the creator is verified by an admin
   const creator = await CreatorModel.findById(creatorId)
-  if (creator.status !== CreatorStatus.VERIFIED) {
+  if (creator.status === CreatorStatus.BLOCKED) {
     throw new Error(errorNames.unauthorized)
   }
 
@@ -93,7 +93,8 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
       productName: campaign.product.name,
-      collabLink: `${process.env.APP_URL}/creator/games/${collab._id}`,
+      quote: collab.quote,
+      collabLink: `${process.env.APP_URL}/creator/games/${collab.campaign}`,
     },
     message: {
       from: 'Revolt Gaming <campaigns@revoltgaming.co>',

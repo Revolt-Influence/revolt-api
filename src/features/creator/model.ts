@@ -122,7 +122,7 @@ class Creator {
   password: string
 
   @Field(() => Youtuber, { description: 'Youtube account linked to the creator', nullable: true })
-  @prop({ ref: Youtuber, sparse: true })
+  @prop({ ref: Youtuber })
   youtube: Ref<Youtuber>
 
   @prop()
@@ -146,6 +146,9 @@ class Creator {
 
   @prop()
   stripeConnectedAccountId?: string
+
+  @Field({ nullable: true, description: 'Temporary link used to access the Stripe dashboard' })
+  stripeLoginLink?: string
 
   @Field({ description: 'Whether the creator has a Stripe connect account' })
   hasConnectedStripe: boolean

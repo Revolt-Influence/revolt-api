@@ -9,6 +9,7 @@ import { getCampaignById } from '../campaign'
 import { getVideoIdFromYoutubeUrl, getYoutubeVideoData } from '../youtuber'
 import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
+import { chargeCollabQuote } from '../user'
 
 interface BaseReview {
   link: string
@@ -99,6 +100,11 @@ async function submitCreatorReview(
     path: 'instagram',
     select: 'picture_url followers post_count username likes comments',
   })) as DocumentType<Collab>
+
+  if (collab.quote > 0) {
+    // Process the quote payment in the background
+    chargeCollabQuote(collab._id)
+  }
 
   // Send notification email in the background
   notifyReviewsSubmitted(collab)
