@@ -1,12 +1,19 @@
 import { DocumentType, mongoose } from '@hasezoey/typegoose'
 import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel, CreatorStatus } from '../creator/model'
 import { emailService } from '../../utils/emails'
-import { getCampaignById } from '../campaign'
+import { getCampaignById, notifyNewCampaignProposition } from '../campaign'
 import { Brand } from '../brand/model'
-import { sendMessage, MessageOptions } from '../conversation'
+import {
+  sendMessage,
+  MessageOptions,
+  getOrCreateConversationByParticipants,
+  emitMessageToSockets,
+} from '../conversation'
 import { ConversationModel } from '../conversation/model'
+import { CampaignModel, Campaign } from '../campaign/model'
+import { UserModel } from '../user/model'
 
 async function getCollabById(
   collabId: string,
@@ -24,6 +31,60 @@ async function getCollabById(
   return collab
 }
 
+export async function applyToCampaign(
+  campaignId: mongoose.Types.ObjectId,
+  creatorId: mongoose.Types.ObjectId,
+  message: string,
+  quote: number
+): Promise<DocumentType<Collab>> {
+  // Check if creator hasn't already applied
+  const maybeExistingCollab = await CollabModel.findOne({
+    campaign: campaignId,
+    creator: creatorId,
+  })
+  if (maybeExistingCollab != null) {
+    throw new CustomError(400, errorNames.alreadyApplied)
+  }
+
+  // Verify the creator is verified by an admin
+  const creator = await CreatorModel.findById(creatorId)
+  if (creator.status === CreatorStatus.BLOCKED) {
+    throw new Error(errorNames.unauthorized)
+  }
+
+  // Find the collab brand
+  const campaign = await CampaignModel.findById(campaignId)
+  // Find or creator matching conversation
+  const conversation = await getOrCreateConversationByParticipants(
+    creatorId,
+    campaign.brand as mongoose.Types.ObjectId
+  )
+  // Send motivation message
+  await sendMessage({
+    conversationId: conversation._id,
+    text: message,
+    creatorAuthorId: creatorId,
+    isAdminAuthor: false,
+    isNotification: true,
+  })
+  // Actually create the collab
+  const collab = new CollabModel({
+    campaign: campaignId,
+    creator: creatorId,
+    status: CollabStatus.REQUEST,
+    deadline: null,
+    message,
+    quote,
+    conversation: conversation._id,
+  } as Partial<Collab>)
+  await collab.save()
+
+  // Notify the brand via email in the background (no async needed)
+  notifyNewCampaignProposition(campaignId, creatorId, message, quote)
+
+  return collab
+}
+
 async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void> {
   const campaign = await getCampaignById(collab.campaign as mongoose.Types.ObjectId)
   await emailService.send({
@@ -32,7 +93,8 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
       productName: campaign.product.name,
-      collabLink: `${process.env.APP_URL}/creator/games/${collab._id}`,
+      quote: collab.quote,
+      collabLink: `${process.env.APP_URL}/creator/games/${collab.campaign}`,
     },
     message: {
       from: 'Revolt Gaming <campaigns@revoltgaming.co>',
@@ -140,6 +202,56 @@ async function getCreatorCollabs(
     .where('status')
     .ne('refused')
   return collabs
+}
+
+export async function updateCollabQuote(
+  collabId: string,
+  newQuote: number,
+  io: SocketIO.Server
+): Promise<Collab> {
+  // Find the collab
+  const collab = await CollabModel.findById(collabId).populate('creator campaign')
+  // Make sure it wasn't accepted already
+  if (collab.status !== CollabStatus.REQUEST && collab.status !== CollabStatus.DENIED) {
+    throw new Error(errorNames.unauthorized)
+  }
+  // Update the quote
+  collab.quote = newQuote
+  // Make sure the status is reset
+  collab.status = CollabStatus.REQUEST
+  await collab.save()
+  const owner = await UserModel.findOne((collab.campaign as Campaign)
+    .owner as mongoose.Types.ObjectId)
+  // Send notification email in the background
+  emailService.send({
+    template: 'collabQuoteUpdated',
+    locals: {
+      creatorName: (collab.creator as Creator).name,
+      productName: (collab.campaign as Campaign).product.name,
+      newQuote,
+      dashboardLink: `${process.env.APP_URL}/brand/campaigns/${
+        (collab.campaign as Campaign)._id
+      }/dashboard?tab=requests`,
+    },
+    message: {
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
+      to: owner.email,
+    },
+  })
+  // Send notification message
+  const sentMessage = await sendMessage({
+    conversationId: collab.conversation as mongoose.Types.ObjectId,
+    isAdminAuthor: true,
+    isNotification: true, // Don't send double email
+    text: `${(collab.creator as Creator).name} has updated his quote. It is now $${newQuote}`,
+  })
+  // Send message to sockets
+  const conversation = await ConversationModel.findById(
+    collab.conversation as mongoose.Types.ObjectId
+  )
+  emitMessageToSockets(io, conversation, sentMessage)
+  // Return updated collab
+  return collab
 }
 
 export { getCollabById, reviewCollab, getCampaignCollabs, getCreatorCollabs }

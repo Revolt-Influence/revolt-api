@@ -3,9 +3,10 @@ import { emailService } from '../../utils/emails'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Brand, BrandModel } from '../brand/model'
 import { Creator, CreatorModel } from '../creator/model'
-import { User } from '../user/model'
+import { User, UserModel } from '../user/model'
 import { Conversation, ConversationModel, Message, MessageModel } from './model'
 import { PaginatedConversationResponse } from './resolver'
+import { socketEvents } from '../../utils/sockets'
 
 const CONVERSATIONS_PER_PAGE = 20
 
@@ -244,6 +245,24 @@ async function getUserConversations(
 async function getAdminConversations(page: number): Promise<PaginatedConversationResponse> {
   // Get all the conversations
   return getConversationsPage({}, page)
+}
+
+export async function emitMessageToSockets(
+  io: SocketIO.Server,
+  conversation: Conversation,
+  sentMessage: Message
+): Promise<void> {
+  // Find all users that should be notified of the message (admins, brand users, creator)
+  const admins = await UserModel.find({ isAdmin: true } as Partial<User>).select('_id')
+  const adminsIds = admins.map(_admin => _admin._id)
+  const brand = await BrandModel.findById(conversation.brand as mongoose.Types.ObjectId)
+  const rooms = [conversation.creator as mongoose.Types.ObjectId, ...brand.users, ...adminsIds]
+  const uniqueRooms = [...new Set(rooms)]
+
+  // Emit message for each of these users
+  uniqueRooms.forEach(_room => {
+    io.sockets.to(_room).emit(socketEvents.NEW_MESSAGE, sentMessage)
+  })
 }
 
 export {

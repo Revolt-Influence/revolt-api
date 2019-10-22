@@ -8,6 +8,7 @@ import {
   getUserConversations,
   getAdminConversations,
   sendMessage,
+  emitMessageToSockets,
 } from '.'
 import { UserModel, User } from '../user/model'
 import { Conversation, ConversationModel, Message, MessageModel } from './model'
@@ -16,6 +17,7 @@ import { Creator, CreatorModel } from '../creator/model'
 import { socketEvents } from '../../utils/sockets'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
 import { MyContext, SessionType } from '../session/model'
+import { CollabModel, Collab } from '../collab/model'
 
 const PaginatedConversationResponse = PaginatedResponse(Conversation)
 type PaginatedConversationResponse = InstanceType<typeof PaginatedConversationResponse>
@@ -95,16 +97,7 @@ class ConversationResolver {
       isNotification: false,
     })
 
-    // Find all users that should be notified of the message (admins, brand users, creator)
-    const admins = await UserModel.find({ isAdmin: true } as Partial<User>).select('_id')
-    const adminsIds = admins.map(_admin => _admin._id)
-    const brand = await BrandModel.findById(conversation.brand as mongoose.Types.ObjectId)
-    const rooms = [conversation.creator as mongoose.Types.ObjectId, ...brand.users, ...adminsIds]
-
-    // Emit message for each of these users
-    rooms.forEach(_room => {
-      ctx.io.sockets.to(_room).emit(socketEvents.NEW_MESSAGE, sentMessage)
-    })
+    await emitMessageToSockets(ctx.io, conversation, sentMessage)
 
     // No need to return the conversation since sockets will update the client
     return 'Message sent'
@@ -135,6 +128,12 @@ class ConversationResolver {
   async messagesCount(@Root() conversation: DocumentType<Conversation>): Promise<number> {
     const messagesCount = await MessageModel.find({ conversation: conversation._id }).count()
     return messagesCount
+  }
+
+  @FieldResolver(() => [Collab])
+  async collabs(@Root() conversation: DocumentType<Conversation>): Promise<Collab[]> {
+    const collabs = await CollabModel.find({ conversation: conversation._id })
+    return collabs
   }
 }
 

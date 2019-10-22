@@ -1,0 +1,10 @@
+extends ../layout.pug
+
+block content
+  p #{creatorName} has updated his quote for the game #{productName}. It is now $#{newQuote}.
+  br
+  p You can accept or refuse this request on your Revolt dashboard.
+  br
+  a.btn.btn-primary(href=dashboardLink target='_blank') View the request
+  br
+  p Thanks.

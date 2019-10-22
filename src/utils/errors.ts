@@ -28,6 +28,7 @@ const errorNames = {
   pageDoesNotExist: 'Page does not exist',
   invalidPayload: 'Invalid payload',
   invalidToken: 'Invalid token',
+  noPaymentMethod: 'No payment method',
   // Campaign related
   campaignNotFound: 'Campaign not found',
   campaignAlreadyExists: 'Campaign already exists',

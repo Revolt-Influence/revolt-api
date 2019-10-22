@@ -40,6 +40,10 @@ class Collab {
   @prop({ enum: CollabStatus, type: String })
   status: CollabStatus
 
+  @Field({ description: 'How much the influencer wants to be paid in USD' })
+  @prop({ default: 0, min: 0 })
+  quote: number
+
   @Field(() => Creator, { description: 'The creator working on the collab' })
   @prop({ ref: Creator })
   creator: Ref<Creator>

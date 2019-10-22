@@ -9,6 +9,7 @@ import { getCampaignById } from '../campaign'
 import { getVideoIdFromYoutubeUrl, getYoutubeVideoData } from '../youtuber'
 import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
+import { chargeCollabQuote } from '../user'
 
 interface BaseReview {
   link: string
@@ -100,16 +101,21 @@ async function submitCreatorReview(
     select: 'picture_url followers post_count username likes comments',
   })) as DocumentType<Collab>
 
+  if (collab.quote > 0) {
+    // Process the quote payment in the background
+    chargeCollabQuote(collab._id)
+  }
+
   // Send notification email in the background
   notifyReviewsSubmitted(collab)
 
   // Send message in the background
-  sendMessage({
+  const sentMessage = await sendMessage({
     conversationId: collab.conversation as mongoose.Types.ObjectId,
     brandAuthorId: null,
     creatorAuthorId: null,
     isAdminAuthor: true,
-    text: `🔥 ${(collab.creator as Creator).name} a posté ses revues pour la campagne ${
+    text: `🔥 ${(collab.creator as Creator).name} has posted his review of ${
       campaign.product.name
     }`,
     isNotification: true,

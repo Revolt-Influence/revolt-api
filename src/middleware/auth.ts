@@ -22,7 +22,10 @@ const customAuthChecker: AuthChecker<MyContext> = ({ context }, roles: AuthRole[
   if (roles.includes(AuthRole.USER) && session.sessionType !== SessionType.BRAND) {
     return false
   }
-  if (roles.includes(AuthRole.ADMIN) && !session.user.isAdmin) {
+  if (
+    roles.includes(AuthRole.ADMIN) &&
+    (session.sessionType === SessionType.CREATOR || !session.user.isAdmin)
+  ) {
     return false
   }
 

@@ -128,6 +128,7 @@ class Campaign {
   @prop()
   goal?: string
 
+  @Authorized(AuthRole.USER)
   @Field(() => User, { description: 'The user who created the campaign' })
   @prop({ ref: 'User' })
   owner: Ref<User>
