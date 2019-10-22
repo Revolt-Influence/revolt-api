@@ -218,6 +218,9 @@ export async function createStripeConnectedAccount(
 
 export async function getCreatorStripeLoginLink(creatorId: string): Promise<string> {
   const creator = await CreatorModel.findById(creatorId)
+  if (!creator.stripeLoginLink) {
+    return null
+  }
   const loginData = await stripe.accounts.createLoginLink(creator.stripeConnectedAccountId)
   return loginData.url
 }
