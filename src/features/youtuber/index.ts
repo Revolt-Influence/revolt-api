@@ -25,7 +25,7 @@ async function getYoutubeVideoData(videoId: string): Promise<YoutubeVideo> {
   })
   const { snippet, statistics } = rawVideos.data.items[0]
   const video: YoutubeVideo = {
-    thumbnail: snippet.thumbnails.maxres.url,
+    thumbnail: snippet.thumbnails.default.url,
     title: snippet.title,
     url: `https://www.youtube.com/watch?v=${videoId}`,
     videoId,
