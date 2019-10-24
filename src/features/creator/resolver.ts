@@ -20,6 +20,7 @@ import {
   updateCreatorEmail,
   createStripeConnectedAccount,
   getCreatorStripeLoginLink,
+  addReferredBrandEmail,
 } from '.'
 import { AuthRole } from '../../middleware/auth'
 import { PaginatedResponse } from '../../resolvers/PaginatedResponse'
@@ -169,6 +170,16 @@ class CreatorResolver {
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
     const updatedCreator = await createStripeConnectedAccount(code, ctx.state.user.creator._id)
+    return updatedCreator
+  }
+
+  @Authorized(AuthRole.CREATOR)
+  @Mutation(() => Creator, { description: 'Add a referred brand email' })
+  async addReferredBrandEmail(
+    @Arg('brandEmail') brandEmail: string,
+    @Ctx() ctx: MyContext
+  ): Promise<Creator> {
+    const updatedCreator = await addReferredBrandEmail(ctx.state.user.creator._id, brandEmail)
     return updatedCreator
   }
 

@@ -225,6 +225,17 @@ export async function getCreatorStripeLoginLink(creatorId: string): Promise<stri
   return loginData.url
 }
 
+export async function addReferredBrandEmail(
+  creatorId: mongoose.Types.ObjectId,
+  brandEmail: string
+): Promise<Creator> {
+  const creator = await CreatorModel.findById(creatorId)
+  creator.referredBrandEmails.push(brandEmail)
+  creator.markModified('referredBrandEmails')
+  await creator.save()
+  return creator
+}
+
 export {
   createCreator,
   saveCreatorProfile,
