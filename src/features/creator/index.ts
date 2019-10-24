@@ -229,10 +229,27 @@ export async function addReferredBrandEmail(
   creatorId: mongoose.Types.ObjectId,
   brandEmail: string
 ): Promise<Creator> {
+  // Save referred email
   const creator = await CreatorModel.findById(creatorId)
   creator.referredBrandEmails.push(brandEmail)
   creator.markModified('referredBrandEmails')
   await creator.save()
+
+  // Notify an admin
+  await emailService.send({
+    template: 'newReferredBrandEmail',
+    locals: {
+      creatorName: creator.name,
+      signupLink: `${process.env.APP_URL}/userSignup?ambassador=${creatorId}`,
+      brandEmail,
+    },
+    message: {
+      from: 'Revolt Gaming <campaigns@revoltgaming.co>',
+      to: process.env.CAMPAIGN_MANAGER_EMAIL,
+    },
+  })
+
+  // Send saved data
   return creator
 }
 
