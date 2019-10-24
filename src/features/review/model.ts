@@ -1,9 +1,9 @@
-import { getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
+import { getModelForClass, modelOptions, prop, Ref, arrayProp } from '@hasezoey/typegoose'
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Creator } from '../creator/model'
 
-enum ReviewFormat {
+export enum ReviewFormat {
   YOUTUBE_VIDEO = 'Youtube video',
 }
 registerEnumType(ReviewFormat, {
@@ -11,9 +11,35 @@ registerEnumType(ReviewFormat, {
   description: 'What platform the creator will use to promote the game',
 })
 
+@modelOptions({ schemaOptions: { timestamps: true } })
+export class ReviewStats {
+  @Field(() => ID, { description: 'Mongoose generated ID' })
+  readonly _id: mongoose.Types.ObjectId
+
+  @Field()
+  @prop()
+  likeCount?: number
+
+  @Field()
+  @prop()
+  commentCount: number
+
+  @Field()
+  @prop()
+  viewCount: number
+
+  @Field(() => Date)
+  createdAt: Readonly<Date>
+
+  @Field(() => Date)
+  updatedAt: Readonly<Date>
+}
+
+export const ReviewStatsModel = getModelForClass(ReviewStats)
+
 @ObjectType({ description: 'A review on a social media' })
 @modelOptions({ schemaOptions: { timestamps: true } })
-class Review {
+export class Review {
   @Field(() => ID, { description: 'Mongoose generated ID' })
   readonly _id: mongoose.Types.ObjectId
 
@@ -44,6 +70,10 @@ class Review {
   @prop({ ref: Creator })
   creator: Ref<Creator>
 
+  @Field(() => [ReviewStats], { description: 'History of the reviews stats since they were added' })
+  @arrayProp({ itemsRef: 'ReviewStats', default: [] })
+  stats: ReviewStats[]
+
   @Field(() => Date)
   createdAt: Readonly<Date>
 
@@ -51,6 +81,4 @@ class Review {
   updatedAt: Readonly<Date>
 }
 
-const ReviewModel = getModelForClass(Review)
-
-export { Review, ReviewModel, ReviewFormat }
+export const ReviewModel = getModelForClass(Review)
