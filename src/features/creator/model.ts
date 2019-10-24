@@ -157,6 +157,10 @@ class Creator {
   @prop({ enum: CreatorStatus, type: String, default: CreatorStatus.UNVERIFIED })
   status: CreatorStatus
 
+  @Field(() => [String], { description: 'Email of brands that the influencer referred' })
+  @arrayProp({ type: String, items: String, default: [] })
+  referredBrandEmails: string[]
+
   @Field(() => Date)
   createdAt: Readonly<Date>
 
