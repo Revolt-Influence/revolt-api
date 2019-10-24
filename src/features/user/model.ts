@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { prop, Ref, getModelForClass, modelOptions } from '@hasezoey/typegoose'
+import { prop, Ref, getModelForClass, modelOptions } from '@typegoose/typegoose'
 import { ObjectType, Field, ID, registerEnumType, Authorized } from 'type-graphql'
 import { Creator } from '../creator/model'
 import { AuthRole } from '../../middleware/auth'

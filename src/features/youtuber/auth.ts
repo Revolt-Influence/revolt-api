@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator, CreatorModel } from '../creator/model'
 import { uploadToCloudinary } from '../../utils/pictures'

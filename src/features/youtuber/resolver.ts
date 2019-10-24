@@ -1,7 +1,7 @@
 import Router from 'koa-router'
 import { Context } from 'koa'
 import { Resolver, Query, Arg, FieldResolver, Root } from 'type-graphql'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType } from '@typegoose/typegoose'
 import { errorNames } from '../../utils/errors'
 import { getYoutuberById } from '.'
 import { Youtuber, YoutuberModel, YoutubeVideo } from './model'

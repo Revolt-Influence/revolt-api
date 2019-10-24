@@ -1,4 +1,4 @@
-import { getModelForClass, modelOptions, prop, Ref, arrayProp } from '@hasezoey/typegoose'
+import { getModelForClass, modelOptions, prop, Ref, arrayProp } from '@typegoose/typegoose'
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Creator } from '../creator/model'
@@ -11,6 +11,7 @@ registerEnumType(ReviewFormat, {
   description: 'What platform the creator will use to promote the game',
 })
 
+@ObjectType({ description: 'Review stats at a point in time' })
 @modelOptions({ schemaOptions: { timestamps: true } })
 export class ReviewStats {
   @Field(() => ID, { description: 'Mongoose generated ID' })

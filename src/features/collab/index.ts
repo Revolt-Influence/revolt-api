@@ -1,4 +1,4 @@
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator, CreatorModel, CreatorStatus } from '../creator/model'

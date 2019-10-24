@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType } from '@typegoose/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { YoutubeVideo, Youtuber, YoutuberModel } from './model'
 

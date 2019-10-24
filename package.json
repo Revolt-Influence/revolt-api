@@ -60,9 +60,9 @@
     "typescript": "^3.6.3"
   },
   "dependencies": {
-    "@hasezoey/typegoose": "^6.0.0-30",
     "@koa/cors": "^2.2.2",
     "@sentry/node": "^5.5.0",
+    "@typegoose/typegoose": "^6.0.4",
     "apollo": "^2.18.3",
     "apollo-server-koa": "^2.9.4",
     "bcrypt": "^3.0.2",

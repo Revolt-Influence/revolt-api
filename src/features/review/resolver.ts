@@ -1,5 +1,5 @@
 import { Resolver, FieldResolver, Root } from 'type-graphql'
-import { DocumentType } from '@hasezoey/typegoose'
+import { DocumentType } from '@typegoose/typegoose'
 import { Review } from './model'
 import { Creator, CreatorModel } from '../creator/model'
 

@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { User, UserModel } from './model'
 import { errorNames, CustomError } from '../../utils/errors'
 import { createHubspotContact } from './hubspot'

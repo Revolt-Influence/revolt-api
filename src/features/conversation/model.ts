@@ -1,4 +1,4 @@
-import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@hasezoey/typegoose'
+import { arrayProp, getModelForClass, modelOptions, prop, Ref } from '@typegoose/typegoose'
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType } from 'type-graphql'
 import { Brand } from '../brand/model'

@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
 import superagent from 'superagent'
 import Stripe from 'stripe'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
 import { Creator, CreatorModel, CreatorStatus } from './model'

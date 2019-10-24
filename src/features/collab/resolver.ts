@@ -12,7 +12,7 @@ import {
   FieldResolver,
   Root,
 } from 'type-graphql'
-import { mongoose, DocumentType } from '@hasezoey/typegoose'
+import { mongoose, DocumentType } from '@typegoose/typegoose'
 import { errorNames } from '../../utils/errors'
 import {
   getCollabById,

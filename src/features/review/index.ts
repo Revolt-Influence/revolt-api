@@ -1,4 +1,4 @@
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { Collab, CollabModel, CollabStatus } from '../collab/model'
 import { Review, ReviewModel, ReviewFormat } from './model'
 import { getCollabById } from '../collab'

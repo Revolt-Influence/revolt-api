@@ -1,4 +1,4 @@
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { emailService } from '../../utils/emails'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Brand, BrandModel } from '../brand/model'
