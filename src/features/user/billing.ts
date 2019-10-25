@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import dotenv from 'dotenv'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'

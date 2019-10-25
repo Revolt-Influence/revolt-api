@@ -9,7 +9,7 @@ import {
   Root,
   FieldResolver,
 } from 'type-graphql'
-import { mongoose, DocumentType } from '@hasezoey/typegoose'
+import { mongoose, DocumentType } from '@typegoose/typegoose'
 import { Brand, BrandModel } from './model'
 import { AuthRole } from '../../middleware/auth'
 import { updateBrand } from '.'

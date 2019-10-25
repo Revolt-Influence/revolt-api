@@ -1,5 +1,5 @@
 import Router from 'koa-router'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { Resolver, Query, Authorized, Ctx, Arg, Mutation, FieldResolver, Root } from 'type-graphql'
 import { errorNames } from '../../utils/errors'
 import {

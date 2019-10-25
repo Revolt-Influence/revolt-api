@@ -1,4 +1,4 @@
-import { mongoose, DocumentType } from '@hasezoey/typegoose'
+import { mongoose, DocumentType } from '@typegoose/typegoose'
 import {
   Arg,
   Authorized,

@@ -1,4 +1,4 @@
-import { getModelForClass, prop, Ref, modelOptions, arrayProp } from '@hasezoey/typegoose'
+import { getModelForClass, prop, Ref, modelOptions, arrayProp } from '@typegoose/typegoose'
 import mongoose from 'mongoose'
 import { Field, ID, ObjectType, registerEnumType } from 'type-graphql'
 import { Youtuber } from '../youtuber/model'

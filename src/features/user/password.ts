@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { UserModel, User } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'

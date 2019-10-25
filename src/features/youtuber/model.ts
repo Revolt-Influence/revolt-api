@@ -1,4 +1,4 @@
-import { arrayProp, getModelForClass, modelOptions, prop } from '@hasezoey/typegoose'
+import { arrayProp, getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
 import mongoose from 'mongoose'
 import { loadType } from 'mongoose-float'
 import { Field, ID, ObjectType } from 'type-graphql'
@@ -146,8 +146,8 @@ class Youtuber {
   @prop({ type: Float })
   estimatedCpm: number
 
-  // @Field()
-  // medianViews: number
+  @Field()
+  medianViews: number
 
   @Field(() => Date)
   createdAt: Readonly<Date>

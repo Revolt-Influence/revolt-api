@@ -25,6 +25,7 @@ import { YoutuberResolver } from './features/youtuber/resolver'
 import { MyContext, Session } from './features/session/model'
 import { customAuthChecker } from './middleware/auth'
 import { ReviewResolver } from './features/review/resolver'
+import { CronTaskManager } from './utils/cron'
 
 async function main(): Promise<void> {
   // Create instances and configs./middleware/auth
@@ -98,6 +99,9 @@ async function main(): Promise<void> {
 
   // Open the server to the world
   server.listen(PORT)
+
+  // Start Cron jobs
+  const manager = new CronTaskManager()
 
   // Say hello
   console.log(`Listening on port ${PORT}`)

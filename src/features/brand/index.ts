@@ -1,4 +1,4 @@
-import { mongoose } from '@hasezoey/typegoose'
+import { mongoose } from '@typegoose/typegoose'
 import { Brand, BrandModel } from './model'
 import { UpdateBrandInput } from './resolver'
 import { errorNames } from '../../utils/errors'

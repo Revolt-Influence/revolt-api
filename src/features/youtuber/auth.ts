@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { DocumentType, mongoose } from '@hasezoey/typegoose'
+import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator, CreatorModel } from '../creator/model'
 import { uploadToCloudinary } from '../../utils/pictures'
@@ -93,8 +93,8 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
   const baseReportQuery = {
     access_token: accessToken,
     metrics: 'viewerPercentage',
-    startDate: '2013-01-01', // Just to have data to copy
-    // startDate: twoYearsAgo, // Completely arbitrary
+    // startDate: '2013-01-01', // Just to have data to copy
+    startDate: twoYearsAgo, // Completely arbitrary
     endDate: now,
     ids: 'channel==MINE',
   }

@@ -10,7 +10,7 @@ import {
   FieldResolver,
   Root,
 } from 'type-graphql'
-import { mongoose, DocumentType } from '@hasezoey/typegoose'
+import { mongoose, DocumentType } from '@typegoose/typegoose'
 import { User, UserModel, Plan } from './model'
 import { Creator, CreatorModel } from '../creator/model'
 import { Session, createDefaultSession, SessionType, MyContext } from '../session/model'
