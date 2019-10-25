@@ -146,8 +146,8 @@ class Youtuber {
   @prop({ type: Float })
   estimatedCpm: number
 
-  // @Field()
-  // medianViews: number
+  @Field()
+  medianViews: number
 
   @Field(() => Date)
   createdAt: Readonly<Date>

@@ -63,7 +63,7 @@ async function getCampaignById(
 
 async function getCampaignsFromQuery(query: any, page: number): Promise<PaginatedCampaignResponse> {
   const campaignsPromise = CampaignModel.find(query)
-    .sort({ creationDate: 'descending' })
+    .sort({ createdAt: -1 }) // recent to old
     .skip((page - 1) * CAMPAIGNS_PER_PAGE)
     .limit(CAMPAIGNS_PER_PAGE)
     .exec()
@@ -248,7 +248,7 @@ export async function getCreatorCampaignsPage(
 
   // Promise to get paginated results
   const campaignsPromise = CampaignModel.find(query)
-    .sort({ creationDate: 'descending' })
+    .sort({ createdAt: -1 })
     .skip((safePage - 1) * CREATORS_CAMPAIGNS_PER_PAGE)
     .limit(CREATORS_CAMPAIGNS_PER_PAGE)
     .exec()

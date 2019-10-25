@@ -1,6 +1,7 @@
 import { DocumentType, mongoose } from '@typegoose/typegoose'
+import { google, youtube_v3 } from 'googleapis'
 import { Collab, CollabModel, CollabStatus } from '../collab/model'
-import { Review, ReviewModel, ReviewFormat } from './model'
+import { Review, ReviewModel, ReviewFormat, ReviewStats, ReviewStatsModel } from './model'
 import { getCollabById } from '../collab'
 import { CustomError, errorNames } from '../../utils/errors'
 import { emailService } from '../../utils/emails'
@@ -11,10 +12,17 @@ import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
 import { chargeCollabQuote } from '../user'
 
+const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
+
 interface BaseReview {
   link: string
   format: ReviewFormat
   creatorId: mongoose.Types.ObjectId
+}
+
+interface ReviewData {
+  review: Partial<Review>
+  stats: Partial<ReviewStats>
 }
 
 async function getReviewById(reviewId: mongoose.Types.ObjectId): Promise<DocumentType<Review>> {
@@ -28,27 +36,34 @@ async function getReviewById(reviewId: mongoose.Types.ObjectId): Promise<Documen
 async function getReviewFromYoutubeVideoUrl(
   videoUrl: string,
   creatorId: mongoose.Types.ObjectId
-): Promise<Partial<Review>> {
+): Promise<ReviewData> {
   const videoId = getVideoIdFromYoutubeUrl(videoUrl)
   const video = await getYoutubeVideoData(videoId)
   const now = Date.now()
-  return {
-    format: ReviewFormat.YOUTUBE_VIDEO,
+
+  const stats = {
     commentCount: video.commentCount,
     likeCount: video.likeCount,
     viewCount: video.viewCount,
+  } as Partial<ReviewStats>
+
+  const review = {
+    format: ReviewFormat.YOUTUBE_VIDEO,
     creator: creatorId,
     link: videoUrl,
     thumbnail: video.thumbnail,
-  }
+    platformId: videoId,
+  } as Partial<Review>
+  return { stats, review }
 }
 
-async function enrichReview(review: BaseReview): Promise<Review> {
+async function enrichReview(review: BaseReview): Promise<ReviewData> {
   const { link, format, creatorId } = review
   switch (format) {
     case ReviewFormat.YOUTUBE_VIDEO:
-      const video = await getReviewFromYoutubeVideoUrl(link, creatorId)
-      return video as Review
+      // Get both the review and its stats
+      const reviewData = await getReviewFromYoutubeVideoUrl(link, creatorId)
+      return reviewData
     default:
       return null
   }
@@ -76,7 +91,7 @@ async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<voi
 
 async function submitCreatorReview(
   collabId: string,
-  review: Review
+  reviewData: ReviewData
 ): Promise<DocumentType<Collab>> {
   // Find collab
   const collab = await getCollabById(collabId, 'creator')
@@ -88,8 +103,14 @@ async function submitCreatorReview(
   const campaign = await getCampaignById(collab.campaign as mongoose.Types.ObjectId)
 
   // Create review document
-  const newReview = new ReviewModel(review)
+  const newReview = new ReviewModel(reviewData.review)
   await newReview.save()
+
+  // Create stats document and link it to the review
+  const stats = new ReviewStatsModel({ ...reviewData.stats, review: newReview._id } as Partial<
+    ReviewStats
+  >)
+  await stats.save()
 
   // Add reviews to collab
   collab.review = newReview._id
@@ -121,6 +142,44 @@ async function submitCreatorReview(
     isNotification: true,
   })
   return populatedCollab
+}
+
+export async function saveNewReviewStats(review: DocumentType<Review>): Promise<Review> {
+  if (review.format === ReviewFormat.YOUTUBE_VIDEO) {
+    // Get Youtube video stats
+    const videoData = await youtube.videos.list({ id: review.platformId, part: 'statistics' })
+    const { commentCount, likeCount, viewCount } = videoData.data.items[0].statistics
+    // Save new stats object
+    const stats = new ReviewStatsModel({
+      review: review._id,
+      commentCount: parseInt(commentCount),
+      likeCount: parseInt(likeCount),
+      viewCount: parseInt(viewCount),
+    } as Partial<ReviewStats>)
+    await stats.save()
+    // Link stats to review
+    review.markModified('stats')
+    await review.save()
+    return review
+  }
+}
+
+export async function saveAllReviewsNewStats(): Promise<number> {
+  // Get all reviews
+  const reviews = await ReviewModel.find()
+  // Use reduce to execute promises asynchronously
+  // For more details read https://css-tricks.com/why-using-reduce-to-sequentially-resolve-promises-works/
+  reviews.reduce(async (previousPromise, _review) => {
+    try {
+      await previousPromise
+    } catch (error) {
+      console.log(`Could not update stats for review ${_review._id}`, error)
+    }
+    // TODO: check if there are stats recent enough
+    return saveNewReviewStats(_review)
+  }, Promise.resolve(null))
+  // Return updated count
+  return reviews.length
 }
 
 export { submitCreatorReview, enrichReview, BaseReview, getReviewById }
