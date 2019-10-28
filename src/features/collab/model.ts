@@ -44,6 +44,10 @@ class Collab {
   @prop({ default: 0, min: 0 })
   quote: number
 
+  @Field({ description: 'Bitly link to track the campaign performance' })
+  @prop()
+  trackedLink: string
+
   @Field(() => Creator, { description: 'The creator working on the collab' })
   @prop({ ref: Creator })
   creator: Ref<Creator>

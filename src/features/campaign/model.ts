@@ -112,6 +112,11 @@ export const defaultTargetAudience: TargetAudience = {
   ageGroups: [AgeGroup.ANY],
 }
 
+const defaultRules = [
+  'Feature the game on a Twitch or YouTube video',
+  'Share your unique tracked link in the top part of the description',
+]
+
 @ObjectType({ description: 'A campaign is made by brands to find collabs to promote a product' })
 @modelOptions({
   schemaOptions: { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
@@ -146,7 +151,7 @@ class Campaign {
   targetAudience: TargetAudience
 
   @Field(() => [String], { description: 'Rules that creators must respect to receive the gift' })
-  @arrayProp({ items: String, default: ['Feature the game on a Twitch or YouTube video'] })
+  @arrayProp({ items: String, default: defaultRules })
   rules: string[]
 
   @Field({ description: 'Total amount of money that will be given to creators', nullable: true })
@@ -199,9 +204,5 @@ class Campaign {
 }
 
 const CampaignModel = getModelForClass(Campaign)
-
-// Defaults
-const mandatoryRules: string[] = ['Identifier @revolt.club sur les publications Instagram']
-const defaultRules = ['Les posts devront être gardés au moins 90 jours sur la page']
 
 export { Campaign, CampaignModel, CampaignProduct, TargetAudience }
