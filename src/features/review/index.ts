@@ -12,6 +12,7 @@ import { getVideoIdFromYoutubeUrl, getYoutubeVideoData } from '../youtuber'
 import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
 import { chargeCollabQuote } from '../user'
+import { getTrackedLinkClicksCount } from '../collab/tracking'
 
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
@@ -150,14 +151,21 @@ export async function saveNewReviewStats(review: DocumentType<Review>): Promise<
     // Get Youtube video stats
     const videoData = await youtube.videos.list({ id: review.platformId, part: 'statistics' })
     const { commentCount, likeCount, viewCount } = videoData.data.items[0].statistics
+
+    // Get tracked link stats
+    const collab = await CollabModel.findOne({ review: review._id })
+    const linkClicksCount = await getTrackedLinkClicksCount(collab.trackedLink)
+
     // Save new stats object
     const stats = new ReviewStatsModel({
       review: review._id,
       commentCount: parseInt(commentCount),
       likeCount: parseInt(likeCount),
       viewCount: parseInt(viewCount),
+      linkClicksCount,
     } as Partial<ReviewStats>)
     await stats.save()
+
     // Link stats to review
     review.markModified('stats')
     await review.save()

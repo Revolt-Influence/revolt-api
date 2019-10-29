@@ -83,6 +83,10 @@ export class ReviewStats {
   @prop()
   viewCount: number
 
+  @Field({ description: 'How many times the collab-specific link was clicked' })
+  @prop({ default: 0 })
+  linkClicksCount: number
+
   @Field(() => Date)
   createdAt: Readonly<Date>
 

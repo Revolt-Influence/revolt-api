@@ -34,7 +34,7 @@ export async function createTrackedLink(longUrl: string): Promise<string> {
 interface GetClicksSummaryResponse {
   total_clicks: number
 }
-export async function getTrackedLinkClicks(trackedLink: string): Promise<number> {
+export async function getTrackedLinkClicksCount(trackedLink: string): Promise<number> {
   // Remove HTTP and HTTPS
   const trimmedLink = trackedLink.replace('https://', '').replace('http://', '')
   // Make API call

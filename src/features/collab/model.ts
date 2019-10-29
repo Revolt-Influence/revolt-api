@@ -60,9 +60,9 @@ class Collab {
   @prop()
   message: string
 
-  @Field(() => Review, { description: 'Social media post made for the campaign' })
+  @Field(() => Review, { description: 'Social media post made for the campaign', nullable: true })
   @prop({ ref: Review })
-  review: Ref<Review>
+  review?: Ref<Review>
 
   @Field(() => Conversation, { description: 'Conv where collab brand and creator can chat' })
   @prop({ ref: Conversation })

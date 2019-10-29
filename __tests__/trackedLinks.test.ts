@@ -1,4 +1,4 @@
-import { createTrackedLink, getTrackedLinkClicks } from '../src/features/collab/tracking'
+import { createTrackedLink, getTrackedLinkClicksCount } from '../src/features/collab/tracking'
 
 describe('tracked links', () => {
   test('create tracked link', async done => {
@@ -11,7 +11,7 @@ describe('tracked links', () => {
 
   test('get click summary', async done => {
     const trackedLink = 'http://bit.ly/2qUfqNu'
-    const clicksCount = await getTrackedLinkClicks(trackedLink)
+    const clicksCount = await getTrackedLinkClicksCount(trackedLink)
     expect(clicksCount).not.toBeNaN()
     done()
   })
