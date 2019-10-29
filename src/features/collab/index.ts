@@ -1,4 +1,5 @@
 import { DocumentType, mongoose } from '@typegoose/typegoose'
+import { ShortenResponse } from 'bitly/dist/types'
 import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Creator, CreatorModel, CreatorStatus } from '../creator/model'
@@ -14,6 +15,7 @@ import {
 import { ConversationModel } from '../conversation/model'
 import { CampaignModel, Campaign } from '../campaign/model'
 import { UserModel } from '../user/model'
+import { createTrackedLink } from './tracking'
 
 async function getCollabById(
   collabId: string,
@@ -46,7 +48,7 @@ export async function applyToCampaign(
     throw new CustomError(400, errorNames.alreadyApplied)
   }
 
-  // Verify the creator is verified by an admin
+  // Check that the creator isn't blocked
   const creator = await CreatorModel.findById(creatorId)
   if (creator.status === CreatorStatus.BLOCKED) {
     throw new Error(errorNames.unauthorized)
@@ -59,6 +61,9 @@ export async function applyToCampaign(
     creatorId,
     campaign.brand as mongoose.Types.ObjectId
   )
+  // Generate unique tracking link
+  const trackedLink = await createTrackedLink(campaign.product.website)
+
   // Send motivation message
   await sendMessage({
     conversationId: conversation._id,
@@ -76,6 +81,7 @@ export async function applyToCampaign(
     message,
     quote,
     conversation: conversation._id,
+    trackedLink,
   } as Partial<Collab>)
   await collab.save()
 

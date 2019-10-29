@@ -44,6 +44,10 @@ class Collab {
   @prop({ default: 0, min: 0 })
   quote: number
 
+  @Field({ description: 'Bitly link to track the campaign performance' })
+  @prop()
+  trackedLink: string
+
   @Field(() => Creator, { description: 'The creator working on the collab' })
   @prop({ ref: Creator })
   creator: Ref<Creator>
@@ -56,9 +60,9 @@ class Collab {
   @prop()
   message: string
 
-  @Field(() => Review, { description: 'Social media post made for the campaign' })
+  @Field(() => Review, { description: 'Social media post made for the campaign', nullable: true })
   @prop({ ref: Review })
-  review: Ref<Review>
+  review?: Ref<Review>
 
   @Field(() => Conversation, { description: 'Conv where collab brand and creator can chat' })
   @prop({ ref: Conversation })

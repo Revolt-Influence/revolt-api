@@ -1,5 +1,6 @@
 import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { google, youtube_v3 } from 'googleapis'
+import waait from 'waait'
 import { Collab, CollabModel, CollabStatus } from '../collab/model'
 import { Review, ReviewModel, ReviewFormat, ReviewStats, ReviewStatsModel } from './model'
 import { getCollabById } from '../collab'
@@ -11,6 +12,7 @@ import { getVideoIdFromYoutubeUrl, getYoutubeVideoData } from '../youtuber'
 import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
 import { chargeCollabQuote } from '../user'
+import { getTrackedLinkClicksCount } from '../collab/tracking'
 
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
@@ -149,14 +151,21 @@ export async function saveNewReviewStats(review: DocumentType<Review>): Promise<
     // Get Youtube video stats
     const videoData = await youtube.videos.list({ id: review.platformId, part: 'statistics' })
     const { commentCount, likeCount, viewCount } = videoData.data.items[0].statistics
+
+    // Get tracked link stats
+    const collab = await CollabModel.findOne({ review: review._id })
+    const linkClicksCount = await getTrackedLinkClicksCount(collab.trackedLink)
+
     // Save new stats object
     const stats = new ReviewStatsModel({
       review: review._id,
       commentCount: parseInt(commentCount),
       likeCount: parseInt(likeCount),
       viewCount: parseInt(viewCount),
+      linkClicksCount,
     } as Partial<ReviewStats>)
     await stats.save()
+
     // Link stats to review
     review.markModified('stats')
     await review.save()
@@ -175,7 +184,9 @@ export async function saveAllReviewsNewStats(): Promise<number> {
     } catch (error) {
       console.log(`Could not update stats for review ${_review._id}`, error)
     }
-    // TODO: check if there are stats recent enough
+    // Throttle to prevent getting blacklisted from external services
+    await waait(2000)
+    // Actual promise, gets resolve on next iteration
     return saveNewReviewStats(_review)
   }, Promise.resolve(null))
   // Return updated count
