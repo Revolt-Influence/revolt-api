@@ -27,17 +27,19 @@ interface CreateLinkResponse {
   long_url: string
 }
 export async function createTrackedLink(longUrl: string): Promise<string> {
-  console.log(process.env.BITLY_ACCESS_TOKEN)
-  const linkData = await bitly.shorten(longUrl)
-  return (linkData as ShortenResponse).url
+  const linkData = await bitlyPostRequest<CreateLinkResponse>('/bitlinks', { long_url: longUrl })
+  return linkData.link
 }
 
 interface GetClicksSummaryResponse {
   total_clicks: number
 }
-async function getTrackedLinkClicks(trackedLink: string): Promise<number> {
+export async function getTrackedLinkClicks(trackedLink: string): Promise<number> {
+  // Remove HTTP and HTTPS
+  const trimmedLink = trackedLink.replace('https://', '').replace('http://', '')
+  // Make API call
   const clicksData = await bitlyGetRequest<GetClicksSummaryResponse>(
-    `/bitlinks/${trackedLink}/clicks/summary`
+    `/bitlinks/${trimmedLink}/clicks/summary`
   )
   return clicksData.total_clicks
 }
