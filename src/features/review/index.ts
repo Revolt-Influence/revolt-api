@@ -1,5 +1,6 @@
 import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { google, youtube_v3 } from 'googleapis'
+import waait from 'waait'
 import { Collab, CollabModel, CollabStatus } from '../collab/model'
 import { Review, ReviewModel, ReviewFormat, ReviewStats, ReviewStatsModel } from './model'
 import { getCollabById } from '../collab'
@@ -175,7 +176,9 @@ export async function saveAllReviewsNewStats(): Promise<number> {
     } catch (error) {
       console.log(`Could not update stats for review ${_review._id}`, error)
     }
-    // TODO: check if there are stats recent enough
+    // Throttle to prevent getting blacklisted from external services
+    await waait(2000)
+    // Actual promise, gets resolve on next iteration
     return saveNewReviewStats(_review)
   }, Promise.resolve(null))
   // Return updated count

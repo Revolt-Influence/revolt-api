@@ -1,5 +1,4 @@
 import { DocumentType, mongoose } from '@typegoose/typegoose'
-import { BitlyClient } from 'bitly'
 import { ShortenResponse } from 'bitly/dist/types'
 import { ReviewCollabDecision, Collab, CollabModel, CollabStatus } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
@@ -16,8 +15,7 @@ import {
 import { ConversationModel } from '../conversation/model'
 import { CampaignModel, Campaign } from '../campaign/model'
 import { UserModel } from '../user/model'
-
-const bitly = new BitlyClient(process.env.BITLY_ACCESS_TOKEN, { apiVersion: 'v3' })
+import { createTrackedLink } from './tracking'
 
 async function getCollabById(
   collabId: string,
@@ -64,7 +62,7 @@ export async function applyToCampaign(
     campaign.brand as mongoose.Types.ObjectId
   )
   // Generate unique tracking link
-  const trackedLinkData = await bitly.shorten(campaign.product.website)
+  const trackedLink = await createTrackedLink(campaign.product.website)
 
   // Send motivation message
   await sendMessage({
@@ -83,7 +81,7 @@ export async function applyToCampaign(
     message,
     quote,
     conversation: conversation._id,
-    trackedLink: (trackedLinkData as ShortenResponse).url,
+    trackedLink,
   } as Partial<Collab>)
   await collab.save()
 
