@@ -1,6 +1,5 @@
 import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { google, youtube_v3 } from 'googleapis'
-import waait from 'waait'
 import { Collab, CollabModel, CollabStatus } from '../collab/model'
 import { Review, ReviewModel, ReviewFormat, ReviewStats, ReviewStatsModel } from './model'
 import { getCollabById } from '../collab'
@@ -13,10 +12,11 @@ import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
 import { chargeCollabQuote } from '../user'
 import { getTrackedLinkClicksCount } from '../collab/tracking'
+import { throttle, removeTimeFromDate } from '../../utils/time'
 
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
-interface BaseReview {
+export interface BaseReview {
   link: string
   format: ReviewFormat
   creatorId: mongoose.Types.ObjectId
@@ -27,7 +27,9 @@ interface ReviewData {
   stats: Partial<ReviewStats>
 }
 
-async function getReviewById(reviewId: mongoose.Types.ObjectId): Promise<DocumentType<Review>> {
+export async function getReviewById(
+  reviewId: mongoose.Types.ObjectId
+): Promise<DocumentType<Review>> {
   const review = await ReviewModel.findById(reviewId)
   if (review == null) {
     throw new CustomError(400, errorNames.reviewNotFound)
@@ -59,7 +61,7 @@ async function getReviewFromYoutubeVideoUrl(
   return { stats, review }
 }
 
-async function enrichReview(review: BaseReview): Promise<ReviewData> {
+export async function enrichReview(review: BaseReview): Promise<ReviewData> {
   const { link, format, creatorId } = review
   switch (format) {
     case ReviewFormat.YOUTUBE_VIDEO:
@@ -91,7 +93,7 @@ async function notifyReviewsSubmitted(collab: DocumentType<Collab>): Promise<voi
   })
 }
 
-async function submitCreatorReview(
+export async function submitCreatorReview(
   collabId: string,
   reviewData: ReviewData
 ): Promise<DocumentType<Collab>> {
@@ -173,24 +175,58 @@ export async function saveNewReviewStats(review: DocumentType<Review>): Promise<
   }
 }
 
-export async function saveAllReviewsNewStats(): Promise<number> {
+export async function saveAllReviewsNewStats(): Promise<{
+  updatedCount: number
+  failedReviews: string[]
+}> {
   // Get all reviews
   const reviews = await ReviewModel.find()
+  // Track errors
+  const failedReviews: mongoose.Types.ObjectId[] = []
   // Use reduce to execute promises asynchronously
   // For more details read https://css-tricks.com/why-using-reduce-to-sequentially-resolve-promises-works/
   reviews.reduce(async (previousPromise, _review) => {
     try {
       await previousPromise
     } catch (error) {
+      failedReviews.push(_review._id)
       console.log(`Could not update stats for review ${_review._id}`, error)
     }
     // Throttle to prevent getting blacklisted from external services
-    await waait(2000)
+    await throttle(2000)
     // Actual promise, gets resolve on next iteration
     return saveNewReviewStats(_review)
   }, Promise.resolve(null))
   // Return updated count
-  return reviews.length
+  return {
+    failedReviews: failedReviews.map(_review => (_review as any).toString()),
+    updatedCount: reviews.length - failedReviews.length,
+  }
 }
 
-export { submitCreatorReview, enrichReview, BaseReview, getReviewById }
+export function arrangeReviewStats(
+  stats: DocumentType<ReviewStats>[]
+): DocumentType<ReviewStats>[] {
+  // Use createdAt (not updatedAt) to arrange stats
+  const statsWithoutTime = stats.map(_stat => ({
+    ..._stat,
+    createdAt: removeTimeFromDate(_stat.createdAt as Date),
+  }))
+  // Keep just one per day, using the last one
+  const uniqueDayStats = statsWithoutTime.reduce((keptStats: ReviewStats[], _stat) => {
+    // Check if array includes a value from that day
+    const alreadyThere = keptStats.some(
+      _keptStat =>
+        // Need valueOf() because date equality doesn't work in JS
+        _keptStat.createdAt.valueOf() === _stat.createdAt.valueOf()
+    )
+    if (alreadyThere) {
+      return keptStats
+    }
+    // Keep stat if it wasn't added
+    return [...keptStats, { ..._stat, linkClicksCount: _stat.linkClicksCount || 0 }]
+  }, [])
+  // Restore createdAt time data from updatedAt key
+  const fullUniqueStats = uniqueDayStats.map(_stat => ({ ..._stat, createdAt: _stat.updatedAt }))
+  return fullUniqueStats as DocumentType<ReviewStats>[]
+}

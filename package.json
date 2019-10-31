@@ -101,8 +101,7 @@
     "superagent": "^5.1.0",
     "superagent-proxy": "^2.0.0",
     "type-graphql": "^0.17.5",
-    "uuid": "^3.3.2",
-    "waait": "^1.0.5"
+    "uuid": "^3.3.2"
   },
   "engines": {
     "node": "11.13.0"

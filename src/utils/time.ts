@@ -1,4 +1,6 @@
-function throttle(milliseconds: number): Promise<void> {
+import moment from 'moment'
+
+export function throttle(milliseconds: number): Promise<void> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve()
@@ -6,4 +8,7 @@ function throttle(milliseconds: number): Promise<void> {
   })
 }
 
-export { throttle }
+export function removeTimeFromDate(date: Date): Date {
+  const withoutTime = moment(date).startOf('day')
+  return withoutTime.toDate()
+}
