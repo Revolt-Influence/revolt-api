@@ -1,0 +1,12 @@
+extends ../layout.pug
+
+block content
+  p Hello Revolt 👋
+  br
+  p The script to update the stats of all reviews has run. Here's a summary:
+  h4 #{updatedCount} successful updates
+  h4 #{failedReviews.length} errors
+  ul
+    each _reviewId in failedReviews
+     li= _reviewId
+  p Thanks.
