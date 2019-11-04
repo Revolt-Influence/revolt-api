@@ -35,11 +35,16 @@ interface GetClicksSummaryResponse {
   total_clicks: number
 }
 export async function getTrackedLinkClicksCount(trackedLink: string): Promise<number> {
-  // Remove HTTP and HTTPS
-  const trimmedLink = trackedLink.replace('https://', '').replace('http://', '')
-  // Make API call
-  const clicksData = await bitlyGetRequest<GetClicksSummaryResponse>(
-    `/bitlinks/${trimmedLink}/clicks/summary`
-  )
-  return clicksData.total_clicks
+  try {
+    // Remove HTTP and HTTPS
+    const trimmedLink = trackedLink.replace('https://', '').replace('http://', '')
+    // Make API call
+    const clicksData = await bitlyGetRequest<GetClicksSummaryResponse>(
+      `/bitlinks/${trimmedLink}/clicks/summary`
+    )
+    return clicksData.total_clicks
+  } catch (error) {
+    // Probably because demo campaign
+    return 0
+  }
 }

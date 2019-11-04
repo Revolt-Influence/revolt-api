@@ -15,8 +15,6 @@ import { getTrackedLinkClicksCount } from '../collab/tracking'
 import { throttle, removeTimeFromDate } from '../../utils/time'
 import { CampaignModel } from '../campaign/model'
 
-// const DEMO_CAMPAIGN_ID = '5d9c5a4ab2ddfa00185a2c97' // legend of keepers
-const DEMO_CAMPAIGN_ID = '5d9b546facc7290bd3d7e763' // seeds of resilience
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
 export interface BaseReview {
