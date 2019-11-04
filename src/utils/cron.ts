@@ -11,7 +11,7 @@ export class CronTaskManager {
     // Every day at 3am: '0 3 * * *'
     // Every 10 seconds '*/5 * * * * *'
     // cron.schedule('*/5 * * * * *', async () => {
-    cron.schedule('35 * * * *', async () => {
+    cron.schedule('0 3 * * *', async () => {
       // Sequantially update all review stats
       const { failedReviews, updatedCount } = await saveAllReviewsNewStats()
       // Notify of the task success
