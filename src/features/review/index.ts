@@ -13,7 +13,10 @@ import { sendMessage } from '../conversation'
 import { chargeCollabQuote } from '../user'
 import { getTrackedLinkClicksCount } from '../collab/tracking'
 import { throttle, removeTimeFromDate } from '../../utils/time'
+import { CampaignModel } from '../campaign/model'
 
+// const DEMO_CAMPAIGN_ID = '5d9c5a4ab2ddfa00185a2c97' // legend of keepers
+const DEMO_CAMPAIGN_ID = '5d9b546facc7290bd3d7e763' // seeds of resilience
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
 export interface BaseReview {
@@ -149,13 +152,15 @@ export async function submitCreatorReview(
 }
 
 export async function saveNewReviewStats(review: DocumentType<Review>): Promise<Review> {
+  // Get associated collab
+  const collab = await CollabModel.findOne({ review: review._id })
+
+  // Acutally update stats
   if (review.format === ReviewFormat.YOUTUBE_VIDEO) {
     // Get Youtube video stats
     const videoData = await youtube.videos.list({ id: review.platformId, part: 'statistics' })
     const { commentCount, likeCount, viewCount } = videoData.data.items[0].statistics
 
-    // Get tracked link stats
-    const collab = await CollabModel.findOne({ review: review._id })
     const linkClicksCount = await getTrackedLinkClicksCount(collab.trackedLink)
 
     // Save new stats object
@@ -168,9 +173,6 @@ export async function saveNewReviewStats(review: DocumentType<Review>): Promise<
     } as Partial<ReviewStats>)
     await stats.save()
 
-    // Link stats to review
-    review.markModified('stats')
-    await review.save()
     return review
   }
 }
@@ -181,13 +183,15 @@ export async function saveAllReviewsNewStats(): Promise<{
 }> {
   // Get all reviews
   const reviews = await ReviewModel.find()
-  // Track errors
+  // Count errors and success
   const failedReviews: mongoose.Types.ObjectId[] = []
+  let updatedCount = 0
   // Use reduce to execute promises asynchronously
   // For more details read https://css-tricks.com/why-using-reduce-to-sequentially-resolve-promises-works/
-  reviews.reduce(async (previousPromise, _review) => {
+  const allPromises = reviews.reduce(async (previousPromise, _review) => {
     try {
       await previousPromise
+      updatedCount += 1
     } catch (error) {
       failedReviews.push(_review._id)
       console.log(`Could not update stats for review ${_review._id}`, error)
@@ -197,10 +201,13 @@ export async function saveAllReviewsNewStats(): Promise<{
     // Actual promise, gets resolve on next iteration
     return saveNewReviewStats(_review)
   }, Promise.resolve(null))
+
+  await allPromises
+
   // Return updated count
   return {
     failedReviews: failedReviews.map(_review => (_review as any).toString()),
-    updatedCount: reviews.length - failedReviews.length,
+    updatedCount,
   }
 }
 
