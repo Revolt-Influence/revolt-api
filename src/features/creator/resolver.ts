@@ -13,7 +13,8 @@ import {
 } from 'type-graphql'
 import {
   changeCreatorPassword,
-  createCreator,
+  signupCreatorViaEmail,
+  signupCreatorViaYoutube,
   getCreatorsPage,
   saveCreatorProfile,
   setCreatorStatus,
@@ -89,7 +90,28 @@ class CreatorResolver {
     @Ctx() ctx: MyContext
   ): Promise<Session> {
     // Create user
-    const createdCreator = await createCreator(creator)
+    const createdCreator = await signupCreatorViaEmail(creator)
+    // Generate session ID to help Apollo Client cache data
+    const sessionId = createSessionId(createdCreator._id)
+    const newSessionData: Session = {
+      sessionId,
+      isLoggedIn: true,
+      sessionType: SessionType.CREATOR,
+      creator: createdCreator,
+    }
+    // Save session data in a cookie
+    await ctx.login(newSessionData)
+    // Send to client
+    return newSessionData
+  }
+
+  @Mutation(() => Session, { description: 'Signup a creator via Google login and start a session' })
+  async signupCreatorWithYoutube(
+    @Arg('youtubeCode') youtubeCode: string,
+    @Ctx() ctx: MyContext
+  ): Promise<Session> {
+    // Create creator and associated youtuber from google token
+    const createdCreator = await signupCreatorViaYoutube(youtubeCode)
     // Generate session ID to help Apollo Client cache data
     const sessionId = createSessionId(createdCreator._id)
     const newSessionData: Session = {

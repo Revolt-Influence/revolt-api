@@ -8,11 +8,12 @@ import { getAudienceFromReport } from './audience'
 
 import moment = require('moment')
 
-interface IGoogleData {
+interface GoogleData {
   googleAccessToken: string
   googleRefreshToken: string
   name: string
   picture: string
+  email: string
 }
 
 const CLIENT_ID = '1084044949036-9vs7ckrse27t3c1kep4k24l8i9rv906k.apps.googleusercontent.com'
@@ -44,11 +45,8 @@ async function linkYoutubeChannel(
   if (creator == null) {
     throw new CustomError(400, errorNames.creatorNotFound)
   }
-  // Parse code to get Youtube stuff
-  const googleData = await checkGoogleToken(code)
-  const report = await getChannelReport(googleData.googleAccessToken)
-  const videos = await getChannelVideos(report.uploadsPlaylistId)
-  const youtuber = await createYoutuberFromReport(report, videos)
+  // Create Youtuber
+  const { youtuber, googleData } = await createYoutuberFromCode(code)
   // Ensure enough followers (except if admin)
   if (
     youtuber.subscriberCount < MINIMUM_YOUTUBE_FOLLOWERS &&
@@ -60,7 +58,20 @@ async function linkYoutubeChannel(
   return updatedCreator
 }
 
-async function checkGoogleToken(code: string): Promise<IGoogleData> {
+interface CreatedYoutuber {
+  youtuber: DocumentType<Youtuber>
+  googleData: GoogleData
+}
+export async function createYoutuberFromCode(code: string): Promise<CreatedYoutuber> {
+  // Parse code to get Youtube stuff
+  const googleData = await checkGoogleToken(code)
+  const report = await getChannelReport(googleData.googleAccessToken)
+  const videos = await getChannelVideos(report.uploadsPlaylistId)
+  const youtuber = await createYoutuberFromReport(report, videos)
+  return { youtuber, googleData }
+}
+
+async function checkGoogleToken(code: string): Promise<GoogleData> {
   // Exchange the code for tokens
   try {
     const { tokens } = await oauth.getToken(code)
@@ -76,6 +87,7 @@ async function checkGoogleToken(code: string): Promise<IGoogleData> {
     return {
       name: payload.name,
       picture: payload.picture,
+      email: payload.email,
       googleAccessToken: tokens.access_token,
       googleRefreshToken: tokens.refresh_token,
     }
@@ -234,7 +246,7 @@ async function createYoutuberFromReport(
 async function attachYoutuberToCreator(
   creator: DocumentType<Creator>,
   youtuber: DocumentType<Youtuber>,
-  googleData: IGoogleData
+  googleData: GoogleData
 ): Promise<DocumentType<Creator>> {
   // Use channel data to fill creator profile
   if (creator.name == null) {
