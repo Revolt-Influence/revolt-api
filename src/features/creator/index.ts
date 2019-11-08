@@ -66,9 +66,9 @@ async function checkIfCreatorAlreadyExists(email: string): Promise<void> {
   }
 }
 
-export async function signupCreatorViaYoutube(youtubeCode: string): Promise<DocumentType<Creator>> {
+export async function signupCreatorViaYoutube(googleCode: string): Promise<DocumentType<Creator>> {
   // Create youtuber from token
-  const { youtuber, googleData } = await createYoutuberFromCode(youtubeCode)
+  const { youtuber, googleData } = await createYoutuberFromCode(googleCode)
   // Prevent duplicate users
   await checkIfCreatorAlreadyExists(googleData.email)
   // Create creator

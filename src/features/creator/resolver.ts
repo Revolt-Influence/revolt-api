@@ -107,11 +107,11 @@ class CreatorResolver {
 
   @Mutation(() => Session, { description: 'Signup a creator via Google login and start a session' })
   async signupCreatorWithYoutube(
-    @Arg('youtubeCode') youtubeCode: string,
+    @Arg('googleCode') googleCode: string,
     @Ctx() ctx: MyContext
   ): Promise<Session> {
     // Create creator and associated youtuber from google token
-    const createdCreator = await signupCreatorViaYoutube(youtubeCode)
+    const createdCreator = await signupCreatorViaYoutube(googleCode)
     // Generate session ID to help Apollo Client cache data
     const sessionId = createSessionId(createdCreator._id)
     const newSessionData: Session = {
@@ -153,10 +153,10 @@ class CreatorResolver {
   @Authorized(AuthRole.CREATOR)
   @Mutation(() => Creator, { description: 'Attach Youtube channel to a creator' })
   async attachCreatorYoutubeChannel(
-    @Arg('youtubeCode') youtubeCode: string,
+    @Arg('googleCode') googleCode: string,
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
-    const updatedCreator = await linkYoutubeChannel(youtubeCode, ctx.state.user.creator._id)
+    const updatedCreator = await linkYoutubeChannel(googleCode, ctx.state.user.creator._id)
     return updatedCreator
   }
 
