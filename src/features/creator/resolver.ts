@@ -43,15 +43,6 @@ class SignupCreatorInput {
   @Field({ description: 'Plain password, will be hashed on server' })
   password: string
 
-  @Field()
-  birthYear: number
-
-  @Field(() => Language)
-  language: string
-
-  @Field(() => [GameCategory])
-  categories: GameCategory[]
-
   @Field({ nullable: true, description: 'The ID of the creator who signed him up' })
   ambassador?: string
 }

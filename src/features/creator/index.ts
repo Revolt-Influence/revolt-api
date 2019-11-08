@@ -67,18 +67,23 @@ async function checkIfCreatorAlreadyExists(email: string): Promise<void> {
 }
 
 export async function signupCreatorViaYoutube(googleCode: string): Promise<DocumentType<Creator>> {
-  // Create youtuber from token
-  const { youtuber, googleData } = await createYoutuberFromCode(googleCode)
-  // Prevent duplicate users
-  await checkIfCreatorAlreadyExists(googleData.email)
-  // Create creator
-  const creatorDraft: Partial<Creator> = {
-    ...googleData, // email and Google ids
-    youtube: youtuber._id,
+  // TODO: remove try catch
+  try {
+    // Create youtuber from token
+    const { youtuber, googleData } = await createYoutuberFromCode(googleCode)
+    // Prevent duplicate users
+    await checkIfCreatorAlreadyExists(googleData.email)
+    // Create creator
+    const creatorDraft: Partial<Creator> = {
+      ...googleData, // email and Google ids
+      youtube: youtuber._id,
+    }
+    const creator = new CreatorModel(creatorDraft)
+    await creator.save()
+    return creator
+  } catch (error) {
+    console.log(error)
   }
-  const creator = new CreatorModel(creatorDraft)
-  await creator.save()
-  return creator
 }
 
 async function signupCreatorViaEmail(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {

@@ -40,22 +40,27 @@ async function linkYoutubeChannel(
   code: string,
   creatorId: mongoose.Types.ObjectId
 ): Promise<DocumentType<Creator>> {
-  // Get creator
-  const creator = await CreatorModel.findById(creatorId)
-  if (creator == null) {
-    throw new CustomError(400, errorNames.creatorNotFound)
+  console.log('link youtube channel')
+  try {
+    // Get creator
+    const creator = await CreatorModel.findById(creatorId)
+    if (creator == null) {
+      throw new CustomError(400, errorNames.creatorNotFound)
+    }
+    // Create Youtuber
+    const { youtuber, googleData } = await createYoutuberFromCode(code)
+    // Ensure enough followers (except if admin)
+    if (
+      youtuber.subscriberCount < MINIMUM_YOUTUBE_FOLLOWERS &&
+      !ADMIN_CHANNEL_IDS.includes(youtuber.channelId)
+    ) {
+      throw new CustomError(400, errorNames.notEnoughFollowers)
+    }
+    const updatedCreator = await attachYoutuberToCreator(creator, youtuber, googleData)
+    return updatedCreator
+  } catch (error) {
+    console.log(error)
   }
-  // Create Youtuber
-  const { youtuber, googleData } = await createYoutuberFromCode(code)
-  // Ensure enough followers (except if admin)
-  if (
-    youtuber.subscriberCount < MINIMUM_YOUTUBE_FOLLOWERS &&
-    !ADMIN_CHANNEL_IDS.includes(youtuber.channelId)
-  ) {
-    throw new CustomError(400, errorNames.notEnoughFollowers)
-  }
-  const updatedCreator = await attachYoutuberToCreator(creator, youtuber, googleData)
-  return updatedCreator
 }
 
 interface CreatedYoutuber {
