@@ -8,16 +8,17 @@ import { UserModel, User } from '../user/model'
 import { Creator, CreatorModel } from '../creator/model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { Session, SessionType, createDefaultSession } from './model'
+import { checkGoogleToken } from '../youtuber'
 
 export function createSessionId(id: string | mongoose.Types.ObjectId): string {
   return `session_${id}`
 }
 
-async function universalLogin(email: string, plainPassword: string): Promise<Session> {
+export async function universalEmailLogin(email: string, plainPassword: string): Promise<Session> {
   try {
     // Try User login first
-    const user = await userLogin(email, plainPassword)
-    // Return only happens if userLogin hasn't thrown an error
+    const user = await userEmailLogin(email, plainPassword)
+    // Return only happens if userEmailLogin hasn't thrown an error
     return {
       isLoggedIn: true,
       sessionType: SessionType.BRAND,
@@ -27,8 +28,8 @@ async function universalLogin(email: string, plainPassword: string): Promise<Ses
   } catch (error) {
     try {
       // Then try Creator login
-      const creator = await creatorLogin(email, plainPassword)
-      // Return only happens if creatorLogin hasn't thrown an error
+      const creator = await creatorEmailLogin(email, plainPassword)
+      // Return only happens if creatorEmailLogin hasn't thrown an error
       return {
         isLoggedIn: true,
         sessionType: SessionType.CREATOR,
@@ -42,7 +43,7 @@ async function universalLogin(email: string, plainPassword: string): Promise<Ses
   }
 }
 
-async function userLogin(email: string, plainPassword: string): Promise<DocumentType<User>> {
+async function userEmailLogin(email: string, plainPassword: string): Promise<DocumentType<User>> {
   const user = await UserModel.findOne({ email })
   if (user == null) {
     // User does not exist
@@ -57,7 +58,10 @@ async function userLogin(email: string, plainPassword: string): Promise<Document
   return user
 }
 
-async function creatorLogin(email: string, plainPassword: string): Promise<DocumentType<Creator>> {
+async function creatorEmailLogin(
+  email: string,
+  plainPassword: string
+): Promise<DocumentType<Creator>> {
   const creator = await CreatorModel.findOne({ email }).populate('instagram youtube')
   if (creator == null) {
     // User does not exist
@@ -72,7 +76,37 @@ async function creatorLogin(email: string, plainPassword: string): Promise<Docum
   return creator
 }
 
-interface IKey {
+export async function universalGoogleLogin(googleCode: string): Promise<Session> {
+  // Check if the code is valid
+  const { email } = await checkGoogleToken(googleCode)
+
+  // Check if the code matches a saved user
+  const maybeUser = await UserModel.findOne({ email })
+  if (maybeUser) {
+    return {
+      isLoggedIn: true,
+      sessionType: SessionType.BRAND,
+      user: maybeUser,
+      sessionId: createSessionId(maybeUser._id),
+    }
+  }
+
+  // Check if the code matches a saved creator
+  const maybeCreator = await CreatorModel.findOne({ email })
+  if (maybeCreator) {
+    return {
+      isLoggedIn: true,
+      sessionType: SessionType.CREATOR,
+      creator: maybeCreator,
+      sessionId: createSessionId(maybeCreator._id),
+    }
+  }
+
+  // No user and no creator, login failed
+  throw new UserInputError(errorNames.googleLoginFail)
+}
+
+interface Key {
   type: SessionType
   id: mongoose.Types.ObjectId
 }
@@ -89,11 +123,11 @@ passport.serializeUser((session: Session, done) => {
     }
   }
   const idToKeep = getId()
-  const key = { type: session.sessionType, id: idToKeep } as IKey
+  const key = { type: session.sessionType, id: idToKeep } as Key
   done(null, key)
 })
 
-passport.deserializeUser((key: IKey, done: (err: any, session: Session) => void) => {
+passport.deserializeUser((key: Key, done: (err: any, session: Session) => void) => {
   if (key.type === SessionType.BRAND) {
     UserModel.findById(key.id, (err, user) => {
       if (err != null || user == null) {
@@ -125,15 +159,4 @@ passport.deserializeUser((key: IKey, done: (err: any, session: Session) => void)
   }
 })
 
-passport.use(
-  new LocalStrategy(async (email, password, done) => {
-    try {
-      const session = await universalLogin(email, password)
-      return done(null, session)
-    } catch (error) {
-      return done(null, false)
-    }
-  })
-)
-
-export { passport, universalLogin, SessionType }
+export { passport }

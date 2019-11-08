@@ -16,6 +16,7 @@ const errorNames = {
   wrongPassword: 'Wrong password',
   unauthorized: 'Unauthorized, you may need to login',
   loginFail: 'Login failed, invalid email or password',
+  googleLoginFail: 'Login failed, no user linked to this Google account',
   invalidLink: 'This link is not valid',
   guestPlanLimit: 'You reached the limit of the Guest plan',
   freePlanLimit: 'You reached the limit of the Free plan',

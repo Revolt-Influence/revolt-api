@@ -71,7 +71,7 @@ export async function createYoutuberFromCode(code: string): Promise<CreatedYoutu
   return { youtuber, googleData }
 }
 
-async function checkGoogleToken(code: string): Promise<GoogleData> {
+export async function checkGoogleToken(code: string): Promise<GoogleData> {
   // Exchange the code for tokens
   try {
     const { tokens } = await oauth.getToken(code)
@@ -81,7 +81,7 @@ async function checkGoogleToken(code: string): Promise<GoogleData> {
       audience: CLIENT_ID,
     })
     const payload = ticket.getPayload()
-    if (!payload || !payload.name || !payload.picture) {
+    if (!payload || !payload.name) {
       throw new Error(errorNames.invalidPayload)
     }
     return {
