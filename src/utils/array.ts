@@ -9,6 +9,10 @@ export function flatten2dArray<T>(arrayOfArrays: T[][]): T[] {
 }
 
 export function getMedian(array: number[]): number {
+  // Handle no-video channels
+  if (array.length === 0) {
+    return 0
+  }
   const middleIndex = Math.floor(array.length / 2)
   const sortedNumbers = [...array].sort((a, b) => a - b)
   return array.length % 2 !== 0

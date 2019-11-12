@@ -131,10 +131,18 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     metrics: 'views',
   })
 
-  const cpm = await analytics.reports.query({
-    ...baseReportQuery,
-    metrics: 'playbackBasedCpm',
-  })
+  // Default to 0 for CPM since it's not available for everyone
+  let cpm = 0
+  try {
+    const cpmResponse = await analytics.reports.query({
+      ...baseReportQuery,
+      metrics: 'playbackBasedCpm',
+    })
+    // eslint-disable-next-line prefer-destructuring
+    cpm = cpmResponse.data.rows[0][0]
+  } catch (error) {
+    console.log(`Could not get estimatedCpm. Default to 0`)
+  }
 
   // Execute the API calls in parallel
   const channelsList = await youtube.channels.list({
@@ -171,7 +179,7 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     country: channel.snippet.country,
     language: channel.snippet.defaultLanguage,
     uploadsPlaylistId: channel.contentDetails.relatedPlaylists.uploads,
-    estimatedCpm: cpm.data.rows[0][0],
+    estimatedCpm: cpm,
     url:
       channel.snippet.customUrl == null
         ? `https://www.youtube.com/channel/${channel.id}`
