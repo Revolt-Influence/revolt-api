@@ -31,6 +31,7 @@ import { linkYoutubeChannel } from '../youtuber'
 import { Creator, CreatorModel, CreatorStatus, Language, GameCategory } from './model'
 import { Youtuber, YoutuberModel } from '../youtuber/model'
 import { createSessionId } from '../session'
+import { payCreatorUnpaidCollabs } from '../user'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -182,7 +183,11 @@ class CreatorResolver {
     @Arg('code') code: string,
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
+    // Associate creator to Stripe customer
     const updatedCreator = await createStripeConnectedAccount(code, ctx.state.user.creator._id)
+    // Pay the creator for any collabs he hasn't been paid for
+    const unpaidCollabsCount = await payCreatorUnpaidCollabs(updatedCreator._id)
+    console.log(`Paid ${unpaidCollabsCount} unpaid collabs`)
     return updatedCreator
   }
 

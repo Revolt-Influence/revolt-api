@@ -25,6 +25,7 @@ import { YoutuberResolver } from './features/youtuber/resolver'
 import { MyContext, Session } from './features/session/model'
 import { customAuthChecker } from './middleware/auth'
 import { ReviewResolver } from './features/review/resolver'
+import hooksRouter from './routes/hooks'
 import { CronTaskManager } from './utils/cron'
 
 async function main(): Promise<void> {
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
 
   // Top level routing
   router.get('/', ctx => (ctx.body = 'revolt-graphql is up --- 1.0.0'))
+  router.use('/hooks', hooksRouter.routes())
 
   // Middleware
   app.use(cors({ origin: process.env.APP_URL, credentials: true }))

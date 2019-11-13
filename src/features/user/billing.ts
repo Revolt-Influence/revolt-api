@@ -4,7 +4,7 @@ import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'
-import { CollabModel } from '../collab/model'
+import { CollabModel, CollabStatus } from '../collab/model'
 import { CampaignModel, Campaign } from '../campaign/model'
 import { Creator, CreatorModel } from '../creator/model'
 import { emailService } from '../../utils/emails'
@@ -183,4 +183,16 @@ async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Promise<voi
   // Mark collab as paid
   collab.wasPaid = true
   await collab.save()
+}
+
+export async function payCreatorUnpaidCollabs(creatorId: mongoose.Types.ObjectId): Promise<number> {
+  // Get all creator collabs
+  const collabs = await CollabModel.find({ creator: creatorId })
+  // Filter done collabs that weren't paid
+  const unpaidCollabs = collabs.filter(
+    _collab => _collab.status === CollabStatus.DONE && !_collab.wasPaid && _collab.quote > 0
+  )
+  const payPromises = unpaidCollabs.map(async _collab => chargeCollabQuote(_collab._id))
+  await Promise.all(payPromises)
+  return unpaidCollabs.length
 }
