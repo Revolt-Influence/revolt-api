@@ -9,12 +9,15 @@ block content
   br
   p We have generated a unique link for your campaign. You have to include it in the top section of your video's description. Here is the link:
   p #{trackedLink}
-  p Don't forget!
-  p(style="margin-bottom: 20px;") Finally, once your review is online, you have to submit it on Revolt:
+  p(style="margin-bottom: 20px;") Don't forget! Once your review is online, you have to submit it on Revolt:
   p 1. Copy the link of your post
   p 2. Go to Revolt and enter the link in the Collabs section
   br
-  if quote > 0
+  if quote > 0 && !hasConnectedStripe
+    p Enter your bank details to receive the $#{quote} payment. We will send it to your account once you have submitted your review.
+    div
+      a.btn.btn-primary(href=bankDetailsLink) Add my bank details
+  if quote > 0 && hasConnectedStripe
     p You will receive the $#{quote} once you have submitted your review on the platform.
   a.btn.btn-primary(href=collabLink target='_blank') See collab details
   br

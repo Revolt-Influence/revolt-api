@@ -10,6 +10,7 @@ import { uploadToCloudinary } from '../../utils/pictures'
 import { CollabModel, CollabStatus } from '../collab/model'
 import { ConversationModel } from '../conversation/model'
 import { SignupCreatorInput, PaginatedCreatorResponse } from './resolver'
+import { createYoutuberFromCode } from '../youtuber'
 
 const SALT_ROUNDS = 10
 const MINIMUM_INSTAGRAM_LIKES = 250
@@ -55,15 +56,39 @@ async function getCreatorsPage(
   }
 }
 
-async function createCreator(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {
+async function checkIfCreatorAlreadyExists(email: string): Promise<void> {
   // Make sure creator or a brand with same email doesn't already exist
-  const existingCreator = await CreatorModel.findOne({ email: creator.email })
-  const existingUser = await UserModel.findOne({ email: creator.email })
+  const existingCreator = await CreatorModel.findOne({ email })
+  const existingUser = await UserModel.findOne({ email })
   if (existingCreator || existingUser) {
-    console.log('Could not create ', creator.email)
+    console.log('Could not create ', email)
     throw new CustomError(400, errorNames.creatorAlreadyExists)
   }
+}
 
+export async function signupCreatorViaYoutube(googleCode: string): Promise<DocumentType<Creator>> {
+  // TODO: remove try catch
+  try {
+    // Create youtuber from token
+    const { youtuber, googleData } = await createYoutuberFromCode(googleCode)
+    // Prevent duplicate users
+    await checkIfCreatorAlreadyExists(googleData.email)
+    // Create creator
+    const creatorDraft: Partial<Creator> = {
+      ...googleData, // email and Google ids
+      youtube: youtuber._id,
+    }
+    const creator = new CreatorModel(creatorDraft)
+    await creator.save()
+    return creator
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+async function signupCreatorViaEmail(creator: SignupCreatorInput): Promise<DocumentType<Creator>> {
+  // Prevent duplicate users
+  await checkIfCreatorAlreadyExists(creator.email)
   // Actually create the creator
   const creatorDraft: Partial<Creator> = {
     ...creator,
@@ -254,7 +279,7 @@ export async function addReferredBrandEmail(
 }
 
 export {
-  createCreator,
+  signupCreatorViaEmail,
   saveCreatorProfile,
   updateCreatorEmail,
   getCreatorsPage,

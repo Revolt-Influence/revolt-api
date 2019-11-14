@@ -10,10 +10,10 @@ import { getCampaignById } from '../campaign'
 import { getVideoIdFromYoutubeUrl, getYoutubeVideoData } from '../youtuber'
 import { Brand } from '../brand/model'
 import { sendMessage } from '../conversation'
-import { chargeCollabQuote } from '../user'
 import { getTrackedLinkClicksCount } from '../collab/tracking'
 import { throttle, removeTimeFromDate } from '../../utils/time'
 import { CampaignModel } from '../campaign/model'
+import { tryPayCreatorQuote } from '../user'
 
 const youtube = google.youtube({ version: 'v3', auth: process.env.YOUTUBE_API_KEY })
 
@@ -127,10 +127,8 @@ export async function submitCreatorReview(
     select: 'picture_url followers post_count username likes comments',
   })) as DocumentType<Collab>
 
-  if (collab.quote > 0) {
-    // Process the quote payment in the background
-    chargeCollabQuote(collab._id)
-  }
+  // Try to pay the creator in the background
+  tryPayCreatorQuote(collabId)
 
   // Send notification email in the background
   notifyReviewsSubmitted(collab)

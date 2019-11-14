@@ -1,0 +1,10 @@
+extends ../layout.pug
+
+block content
+  p Hi #{creatorName}!
+  br
+  p Thanks for publishing your review of #{productName}!
+  p #{brandName} now has to send you the $#{quote} payment to complete the collab. To do so, we need you to enter your bank details. The $#{quote} will then be sent to you automatically.
+  a.btn.btn-primary(href=bankDetailsLink) Add my bank details
+  p Cheers,
+  p The Revolt team

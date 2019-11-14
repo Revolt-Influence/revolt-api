@@ -4,9 +4,11 @@ import { DocumentType, mongoose } from '@typegoose/typegoose'
 import { User, UserModel, Plan } from './model'
 import { CustomError, errorNames } from '../../utils/errors'
 import { updateHubspotContact } from './hubspot'
-import { CollabModel } from '../collab/model'
+import { CollabModel, CollabStatus } from '../collab/model'
 import { CampaignModel, Campaign } from '../campaign/model'
-import { Creator } from '../creator/model'
+import { Creator, CreatorModel } from '../creator/model'
+import { emailService } from '../../utils/emails'
+import { Brand } from '../brand/model'
 
 dotenv.config()
 const PLATFORM_COMMISSION_PERCENTAGE = 15
@@ -110,15 +112,47 @@ export async function getUserCardLast4(user: DocumentType<User>): Promise<string
   return last4
 }
 
+export async function tryPayCreatorQuote(collabId: string): Promise<void> {
+  try {
+    const collab = await CollabModel.findById(collabId).populate('creator')
+    const campaign = await CampaignModel.findById(collab.campaign).populate('brand')
+    if (collab.quote > 0) {
+      // Pay the creator if it's a paid collab
+      const creator = collab.creator as Creator
+      if (creator.stripeConnectedAccountId) {
+        // Everything is ready, pay directly
+        await chargeCollabQuote(collab._id)
+      } else {
+        // Ask the creator to sign up on Stripe so we can pay him
+        await emailService.send({
+          template: 'requestCreatorBank',
+          locals: {
+            creatorName: creator.name,
+            productName: campaign.product.name,
+            brandName: (campaign.brand as Brand).name,
+            quote: collab.quote,
+            bankDetailsLink: `${process.env.APP_URL}/creator/requestStripeConnect`,
+          },
+          message: {
+            from: 'Revolt Gaming <campaigns@revoltgaming.co>',
+            to: (collab.creator as Creator).email,
+          },
+        })
+      }
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 // off_session exists in the docs but was missing from the types
 interface FixedPaymentIntent extends Stripe.paymentIntents.IPaymentIntentCreationOptions {
   off_session: boolean
 }
-export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Promise<void> {
+async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Promise<void> {
   // Get quote amount and stripe users
-  const { quote, campaign, creator } = await CollabModel.findById(collabId).populate(
-    'campaign owner creator'
-  )
+  const collab = await CollabModel.findById(collabId).populate('campaign owner creator')
+  const { quote, campaign, creator } = collab
 
   const brandUser = await UserModel.findById((campaign as Campaign).owner)
   const paymentMethods = await stripe.paymentMethods.list({
@@ -129,12 +163,9 @@ export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Prom
     throw new Error(errorNames.noPaymentMethod)
   }
 
-  // Calculate how much the platform keeps (x100 because s)
-  const platformFee = quote * (PLATFORM_COMMISSION_PERCENTAGE / 100)
-
   // Actually charge the customer and send money to the creator
   await stripe.paymentIntents.create({
-    amount: (quote + platformFee) * 100, // x100 because it's in cents
+    amount: quote * 100, // x100 because it's in cents
     currency: 'usd',
     customer: brandUser.stripeCustomerId,
     payment_method: paymentMethods.data[0].id,
@@ -143,10 +174,25 @@ export async function chargeCollabQuote(collabId: mongoose.Types.ObjectId): Prom
     payment_method_types: ['card'],
     on_behalf_of: (creator as Creator).stripeConnectedAccountId,
     description: `${(campaign as Campaign).product.name} x ${(creator as Creator).name} collab`,
-    application_fee_amount: platformFee * 100, // x100 because cents
     transfer_data: {
       // Once the card is charged, send all but the platform fee to the creator
       destination: (creator as Creator).stripeConnectedAccountId,
     },
   } as FixedPaymentIntent)
+
+  // Mark collab as paid
+  collab.wasPaid = true
+  await collab.save()
+}
+
+export async function payCreatorUnpaidCollabs(creatorId: mongoose.Types.ObjectId): Promise<number> {
+  // Get all creator collabs
+  const collabs = await CollabModel.find({ creator: creatorId })
+  // Filter done collabs that weren't paid
+  const unpaidCollabs = collabs.filter(
+    _collab => _collab.status === CollabStatus.DONE && !_collab.wasPaid && _collab.quote > 0
+  )
+  const payPromises = unpaidCollabs.map(async _collab => chargeCollabQuote(_collab._id))
+  await Promise.all(payPromises)
+  return unpaidCollabs.length
 }

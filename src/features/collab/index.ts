@@ -99,8 +99,11 @@ async function notifyCollabAccepted(collab: DocumentType<Collab>): Promise<void>
       brandName: (campaign.brand as Brand).name,
       username: (collab.creator as Creator).name,
       productName: campaign.product.name,
+      hasConnectedStripe: !!(collab.creator as Creator).stripeConnectedAccountId,
       quote: collab.quote,
-      collabLink: `${process.env.APP_URL}/creator/games/${collab.campaign}`,
+      bankDetailsLink: `${process.env.APP_URL}/creator/requestStripeConnect`,
+      collabLink: `${process.env.APP_URL}/creator/games/${campaign._id}`,
+      trackedLink: collab.trackedLink,
     },
     message: {
       from: 'Revolt Gaming <campaigns@revoltgaming.co>',

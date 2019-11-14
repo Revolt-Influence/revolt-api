@@ -13,7 +13,8 @@ import {
 } from 'type-graphql'
 import {
   changeCreatorPassword,
-  createCreator,
+  signupCreatorViaEmail,
+  signupCreatorViaYoutube,
   getCreatorsPage,
   saveCreatorProfile,
   setCreatorStatus,
@@ -30,6 +31,7 @@ import { linkYoutubeChannel } from '../youtuber'
 import { Creator, CreatorModel, CreatorStatus, Language, GameCategory } from './model'
 import { Youtuber, YoutuberModel } from '../youtuber/model'
 import { createSessionId } from '../session'
+import { payCreatorUnpaidCollabs } from '../user'
 
 const PaginatedCreatorResponse = PaginatedResponse(Creator)
 type PaginatedCreatorResponse = InstanceType<typeof PaginatedCreatorResponse>
@@ -41,15 +43,6 @@ class SignupCreatorInput {
 
   @Field({ description: 'Plain password, will be hashed on server' })
   password: string
-
-  @Field()
-  birthYear: number
-
-  @Field(() => Language)
-  language: string
-
-  @Field(() => [GameCategory])
-  categories: GameCategory[]
 
   @Field({ nullable: true, description: 'The ID of the creator who signed him up' })
   ambassador?: string
@@ -89,7 +82,28 @@ class CreatorResolver {
     @Ctx() ctx: MyContext
   ): Promise<Session> {
     // Create user
-    const createdCreator = await createCreator(creator)
+    const createdCreator = await signupCreatorViaEmail(creator)
+    // Generate session ID to help Apollo Client cache data
+    const sessionId = createSessionId(createdCreator._id)
+    const newSessionData: Session = {
+      sessionId,
+      isLoggedIn: true,
+      sessionType: SessionType.CREATOR,
+      creator: createdCreator,
+    }
+    // Save session data in a cookie
+    await ctx.login(newSessionData)
+    // Send to client
+    return newSessionData
+  }
+
+  @Mutation(() => Session, { description: 'Signup a creator via Google login and start a session' })
+  async signupCreatorWithYoutube(
+    @Arg('googleCode') googleCode: string,
+    @Ctx() ctx: MyContext
+  ): Promise<Session> {
+    // Create creator and associated youtuber from google token
+    const createdCreator = await signupCreatorViaYoutube(googleCode)
     // Generate session ID to help Apollo Client cache data
     const sessionId = createSessionId(createdCreator._id)
     const newSessionData: Session = {
@@ -131,10 +145,10 @@ class CreatorResolver {
   @Authorized(AuthRole.CREATOR)
   @Mutation(() => Creator, { description: 'Attach Youtube channel to a creator' })
   async attachCreatorYoutubeChannel(
-    @Arg('youtubeCode') youtubeCode: string,
+    @Arg('googleCode') googleCode: string,
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
-    const updatedCreator = await linkYoutubeChannel(youtubeCode, ctx.state.user.creator._id)
+    const updatedCreator = await linkYoutubeChannel(googleCode, ctx.state.user.creator._id)
     return updatedCreator
   }
 
@@ -169,7 +183,11 @@ class CreatorResolver {
     @Arg('code') code: string,
     @Ctx() ctx: MyContext
   ): Promise<Creator> {
+    // Associate creator to Stripe customer
     const updatedCreator = await createStripeConnectedAccount(code, ctx.state.user.creator._id)
+    // Pay the creator for any collabs he hasn't been paid for
+    const unpaidCollabsCount = await payCreatorUnpaidCollabs(updatedCreator._id)
+    console.log(`Paid ${unpaidCollabsCount} unpaid collabs`)
     return updatedCreator
   }
 

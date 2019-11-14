@@ -8,11 +8,12 @@ import { getAudienceFromReport } from './audience'
 
 import moment = require('moment')
 
-interface IGoogleData {
+interface GoogleData {
   googleAccessToken: string
   googleRefreshToken: string
   name: string
   picture: string
+  email: string
 }
 
 const CLIENT_ID = '1084044949036-9vs7ckrse27t3c1kep4k24l8i9rv906k.apps.googleusercontent.com'
@@ -39,28 +40,43 @@ async function linkYoutubeChannel(
   code: string,
   creatorId: mongoose.Types.ObjectId
 ): Promise<DocumentType<Creator>> {
-  // Get creator
-  const creator = await CreatorModel.findById(creatorId)
-  if (creator == null) {
-    throw new CustomError(400, errorNames.creatorNotFound)
+  console.log('link youtube channel')
+  try {
+    // Get creator
+    const creator = await CreatorModel.findById(creatorId)
+    if (creator == null) {
+      throw new CustomError(400, errorNames.creatorNotFound)
+    }
+    // Create Youtuber
+    const { youtuber, googleData } = await createYoutuberFromCode(code)
+    // Ensure enough followers (except if admin)
+    if (
+      youtuber.subscriberCount < MINIMUM_YOUTUBE_FOLLOWERS &&
+      !ADMIN_CHANNEL_IDS.includes(youtuber.channelId)
+    ) {
+      throw new CustomError(400, errorNames.notEnoughFollowers)
+    }
+    const updatedCreator = await attachYoutuberToCreator(creator, youtuber, googleData)
+    return updatedCreator
+  } catch (error) {
+    console.log(error)
   }
+}
+
+interface CreatedYoutuber {
+  youtuber: DocumentType<Youtuber>
+  googleData: GoogleData
+}
+export async function createYoutuberFromCode(code: string): Promise<CreatedYoutuber> {
   // Parse code to get Youtube stuff
   const googleData = await checkGoogleToken(code)
   const report = await getChannelReport(googleData.googleAccessToken)
   const videos = await getChannelVideos(report.uploadsPlaylistId)
   const youtuber = await createYoutuberFromReport(report, videos)
-  // Ensure enough followers (except if admin)
-  if (
-    youtuber.subscriberCount < MINIMUM_YOUTUBE_FOLLOWERS &&
-    !ADMIN_CHANNEL_IDS.includes(youtuber.channelId)
-  ) {
-    throw new CustomError(400, errorNames.notEnoughFollowers)
-  }
-  const updatedCreator = await attachYoutuberToCreator(creator, youtuber, googleData)
-  return updatedCreator
+  return { youtuber, googleData }
 }
 
-async function checkGoogleToken(code: string): Promise<IGoogleData> {
+export async function checkGoogleToken(code: string): Promise<GoogleData> {
   // Exchange the code for tokens
   try {
     const { tokens } = await oauth.getToken(code)
@@ -70,12 +86,13 @@ async function checkGoogleToken(code: string): Promise<IGoogleData> {
       audience: CLIENT_ID,
     })
     const payload = ticket.getPayload()
-    if (!payload || !payload.name || !payload.picture) {
+    if (!payload || !payload.name) {
       throw new Error(errorNames.invalidPayload)
     }
     return {
       name: payload.name,
       picture: payload.picture,
+      email: payload.email,
       googleAccessToken: tokens.access_token,
       googleRefreshToken: tokens.refresh_token,
     }
@@ -114,10 +131,18 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     metrics: 'views',
   })
 
-  const cpm = await analytics.reports.query({
-    ...baseReportQuery,
-    metrics: 'playbackBasedCpm',
-  })
+  // Default to 0 for CPM since it's not available for everyone
+  let cpm = 0
+  try {
+    const cpmResponse = await analytics.reports.query({
+      ...baseReportQuery,
+      metrics: 'playbackBasedCpm',
+    })
+    // eslint-disable-next-line prefer-destructuring
+    cpm = cpmResponse.data.rows[0][0]
+  } catch (error) {
+    console.log(`Could not get estimatedCpm. Default to 0`)
+  }
 
   // Execute the API calls in parallel
   const channelsList = await youtube.channels.list({
@@ -154,7 +179,7 @@ async function getChannelReport(accessToken: string): Promise<IChannelReport> {
     country: channel.snippet.country,
     language: channel.snippet.defaultLanguage,
     uploadsPlaylistId: channel.contentDetails.relatedPlaylists.uploads,
-    estimatedCpm: cpm.data.rows[0][0],
+    estimatedCpm: cpm,
     url:
       channel.snippet.customUrl == null
         ? `https://www.youtube.com/channel/${channel.id}`
@@ -234,7 +259,7 @@ async function createYoutuberFromReport(
 async function attachYoutuberToCreator(
   creator: DocumentType<Creator>,
   youtuber: DocumentType<Youtuber>,
-  googleData: IGoogleData
+  googleData: GoogleData
 ): Promise<DocumentType<Creator>> {
   // Use channel data to fill creator profile
   if (creator.name == null) {

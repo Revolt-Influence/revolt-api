@@ -68,6 +68,10 @@ class Collab {
   @prop({ ref: Conversation })
   conversation: Ref<Conversation>
 
+  @Field({ description: 'Whether the collab has been paid' })
+  @prop({ default: false })
+  wasPaid: boolean
+
   @Field(() => Date)
   createdAt: Readonly<Date>
 

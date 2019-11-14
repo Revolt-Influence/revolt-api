@@ -106,17 +106,29 @@ class Creator {
   @prop()
   name?: string
 
-  @Field({ description: 'Year of birth, used to get age approximation and ensure he is 13+' })
+  @Field({
+    description: 'Year of birth, used to get age approximation and ensure he is 13+',
+    deprecationReason: 'Useless and requires an additional Google scope',
+    nullable: true,
+  })
   @prop()
-  birthYear: number
+  birthYear?: number
 
-  @Field(() => [GameCategory], { description: 'Game categories the creator plays' })
-  @arrayProp({ enum: GameCategory, type: String, items: String })
-  categories: GameCategory[]
+  @Field(() => [GameCategory], {
+    description: 'Game categories the creator plays',
+    deprecationReason: 'Useless for invites, creates sign up friction',
+    nullable: true,
+  })
+  @arrayProp({ enum: GameCategory, type: String, items: String, default: [] })
+  categories?: GameCategory[]
 
-  @Field(() => Language, { description: "What language creator's content is in" })
+  @Field(() => Language, {
+    description: "What language creator's content is in",
+    deprecationReason: 'Not very useful, creates signup friction',
+    nullable: true,
+  })
   @prop({ enum: Language, type: String, default: Language.ENGLISH })
-  language: string
+  language?: string
 
   @prop()
   password: string

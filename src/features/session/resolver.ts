@@ -1,10 +1,10 @@
 import Router from 'koa-router'
 import { Resolver, Query, Ctx, Mutation, Arg } from 'type-graphql'
-import { universalLogin } from '.'
 import { errorNames } from '../../utils/errors'
 import { getCreatorCollabs } from '../collab'
 import { getAmbassadorStatus } from '../creator'
 import { Session, MyContext, createDefaultSession } from './model'
+import { passport, universalEmailLogin, universalGoogleLogin } from '.'
 
 @Resolver(() => Session)
 class SessionResolver {
@@ -21,12 +21,22 @@ class SessionResolver {
   }
 
   @Mutation(() => Session, { description: 'Login a user or a creator' })
-  async login(
+  async loginWithEmail(
     @Arg('email') email: string,
     @Arg('password') password: string,
     @Ctx() ctx: MyContext
   ): Promise<Session> {
-    const session = await universalLogin(email.trim().toLowerCase(), password)
+    const session = await universalEmailLogin(email.trim().toLowerCase(), password)
+    await ctx.login(session)
+    return session
+  }
+
+  @Mutation(() => Session, { description: 'Login a user or a creator' })
+  async loginWithGoogle(
+    @Arg('googleCode') googleCode: string,
+    @Ctx() ctx: MyContext
+  ): Promise<Session> {
+    const session = await universalGoogleLogin(googleCode)
     await ctx.login(session)
     return session
   }
